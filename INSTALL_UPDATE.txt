@@ -1,0 +1,40 @@
+HRMIS RECONSTRUCTION PROGRESS MONITORING UPDATE
+
+1. Back up the existing HRMIS project directory and PostgreSQL database.
+2. Extract this ZIP into the existing HRMIS project root, allowing files to merge/overwrite.
+3. Preserve the existing .env, database and media folder. Never share the .env file.
+4. Activate the same virtual environment used for HRMIS.
+5. Run these commands from the folder containing manage.py:
+
+   python -m pip install -r requirements.txt
+   python manage.py check
+   python manage.py migrate
+   python manage.py runserver
+
+The included migrations add progress review fields, link photos to progress submissions and seed 10 proposed construction stages. Do not delete existing migrations or recreate the database.
+
+ENGINEER WORKFLOW
+- Sign in as an engineer.
+- Open a house currently assigned to your account.
+- Select "Reconstruction progress & photos".
+- Submit a milestone progress update and optionally attach original geo-tagged mobile photos.
+- Maximum 10 photos per update; maximum 10 MB per image.
+- Each photo must have embedded GPS EXIF coordinates within 15 metres of the registered house coordinates.
+
+SUPERVISOR WORKFLOW
+- Sign in as a Django superuser.
+- Open the house progress page.
+- Select Review beside a submitted progress record.
+- Approve or request changes and enter comments.
+- Only the latest approved submission for each active milestone contributes to official weighted progress.
+
+CONFIGURATION
+- Open /admin/ and edit Construction stages to change names, order, weights or active status.
+- The included 10 stages and weights are proposed defaults. Confirm the weights with the reconstruction technical team before operational reporting.
+
+SECURITY AND PRODUCTION
+- Engineer access is filtered to currently assigned houses.
+- Review actions are superuser-only in this increment.
+- EXIF GPS can be spoofed; the 15 m rule checks embedded metadata and is not proof of physical presence.
+- For production IIS, configure secure authenticated media delivery and media backups. DEBUG-mode media serving is enabled only for local development.
+- Test with original mobile photos; messaging apps may strip EXIF GPS metadata.

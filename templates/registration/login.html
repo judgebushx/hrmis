@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · HRMIS</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --ink: #0b1f4d;
+      --iom-blue: #0033a0;        /* Pantone 286 C – IOM blue (swap for your official hex if different) */
+      --iom-blue-dark: #00277d;
+      --mist: #eaf0fa;
+      --line: #cfd9ec;
+      --signal: #f2a900;
+
+      --bs-body-font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --bs-body-color: var(--ink);
+      --bs-primary: var(--iom-blue);
+      --bs-primary-rgb: 0, 51, 160;
+      --bs-link-color: var(--iom-blue-dark);
+    }
+
+    body { background: #fff; }
+
+    /* Brand panel */
+    .brand-panel {
+      background: var(--iom-blue);
+      color: #e8eefb;
+      padding: clamp(2rem, 5vw, 4rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .brand-mark { font-weight: 600; font-size: 1.5rem; letter-spacing: .02em; color: #fff; }
+    .brand-panel h1 { font-size: clamp(1.6rem, 2.6vw, 2.2rem); font-weight: 500; line-height: 1.25; max-width: 22ch; }
+    .brand-panel p { color: #c3d0ee; max-width: 38ch; }
+
+    .stages { width: 100%; max-width: 420px; height: auto; }
+    .stages .roof, .stages .wall { stroke: #9fb3e0; fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .stages .done { stroke: #fff; }
+    .stages .fill { fill: rgba(255, 255, 255, .16); stroke: none; }
+    .stages .flag { fill: var(--signal); }
+    .stages text { fill: #c3d0ee; font-size: 12px; font-family: inherit; }
+
+    /* Form panel */
+    .form-panel { padding: clamp(1.5rem, 5vw, 4rem); }
+    .form-wrap { width: 100%; max-width: 400px; }
+    .form-wrap h2 { font-size: 1.6rem; font-weight: 600; }
+
+    .form-control {
+      border-color: var(--line);
+      padding: .7rem .85rem;
+      border-radius: .5rem;
+    }
+    .form-control:focus {
+      border-color: var(--iom-blue);
+      box-shadow: 0 0 0 .2rem rgba(0, 51, 160, .2);
+    }
+    .btn-primary {
+      --bs-btn-bg: var(--iom-blue);
+      --bs-btn-border-color: var(--iom-blue);
+      --bs-btn-hover-bg: var(--iom-blue-dark);
+      --bs-btn-hover-border-color: var(--iom-blue-dark);
+      --bs-btn-active-bg: var(--iom-blue-dark);
+      --bs-btn-active-border-color: var(--iom-blue-dark);
+      --bs-btn-focus-shadow-rgb: 0, 51, 160;
+      padding: .75rem 1rem;
+      font-weight: 500;
+      border-radius: .5rem;
+    }
+    .toggle-pw { border-color: var(--line); color: #4a5f8f; border-radius: 0 .5rem .5rem 0; }
+    .toggle-pw:hover { background: var(--mist); color: var(--ink); }
+    .input-group > .form-control { border-radius: .5rem 0 0 .5rem; }
+
+    .mobile-brand { color: var(--ink); font-weight: 600; font-size: 1.25rem; }
+    .mobile-brand::before {
+      content: ""; display: inline-block; width: .6rem; height: .6rem;
+      background: var(--signal); border-radius: 50%; margin-right: .5rem;
+    }
+  </style>
+</head>
+
+<body>
+<main class="container-fluid p-0">
+  <div class="row g-0 min-vh-100">
+
+    <!-- Brand panel (desktop only) -->
+    <section class="col-lg-6 d-none d-lg-flex brand-panel" aria-label="About HRMIS">
+      <div class="brand-mark">HRMIS</div>
+
+      <div>
+        <h1 class="mb-3">Follow every home from approval to completion.</h1>
+        <p class="mb-5">Housing Reconstruction Monitoring Information System</p>
+
+        <svg class="stages" viewBox="0 0 420 130" role="img"
+             aria-label="Three houses showing progress: foundation, framing, completed">
+          <!-- Foundation -->
+          <g transform="translate(0,0)">
+            <path class="wall" d="M10 100 H110"/>
+            <path class="wall" d="M20 100 V92 M100 100 V92"/>
+            <text x="10" y="124">Foundation</text>
+          </g>
+          <!-- Framing -->
+          <g transform="translate(150,0)">
+            <path class="wall" d="M10 100 H110"/>
+            <path class="wall" d="M20 100 V50 M100 100 V50 M20 50 L60 18 L100 50"/>
+            <text x="10" y="124">Framing</text>
+          </g>
+          <!-- Complete -->
+          <g transform="translate(300,0)">
+            <path class="fill" d="M20 50 L60 18 L100 50 V100 H20 Z"/>
+            <path class="roof done" d="M14 52 L60 14 L106 52"/>
+            <path class="wall done" d="M10 100 H110"/>
+            <rect class="flag" x="52" y="68" width="16" height="32" rx="2"/>
+            <text x="10" y="124">Complete</text>
+          </g>
+        </svg>
+      </div>
+
+      <small class="text-white-50">For authorised programme staff only.</small>
+    </section>
+
+    <!-- Form panel -->
+    <section class="col-12 col-lg-6 d-flex align-items-center justify-content-center form-panel">
+      <div class="form-wrap">
+
+        <div class="mobile-brand d-lg-none mb-1">HRMIS</div>
+        <p class="text-secondary small d-lg-none mb-4">Housing Reconstruction Monitoring Information System</p>
+
+        <h2 class="mb-1">Sign in</h2>
+        <p class="text-secondary mb-4">Use your HRMIS username and password.</p>
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2" role="alert">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+          <div class="mb-3">
+            <label for="{{ form.username.id_for_label }}" class="form-label fw-medium">Username</label>
+            <input type="text"
+                   name="{{ form.username.html_name }}"
+                   id="{{ form.username.id_for_label }}"
+                   value="{{ form.username.value|default:'' }}"
+                   class="form-control{% if form.username.errors %} is-invalid{% endif %}"
+                   autocomplete="username" autocapitalize="none" autofocus required>
+            {% for error in form.username.errors %}
+              <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-4">
+            <label for="{{ form.password.id_for_label }}" class="form-label fw-medium">Password</label>
+            <div class="input-group has-validation">
+              <input type="password"
+                     name="{{ form.password.html_name }}"
+                     id="{{ form.password.id_for_label }}"
+                     class="form-control{% if form.password.errors %} is-invalid{% endif %}"
+                     autocomplete="current-password" required>
+              <button type="button" class="btn toggle-pw" id="togglePw"
+                      aria-label="Show password" aria-pressed="false">Show</button>
+            </div>
+            {% for error in form.password.errors %}
+              <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Sign in</button>
+        </form>
+
+        {# Uncomment if you have the password reset URL configured #}
+        {# <p class="text-center small mt-4 mb-0"><a href="{% url 'password_reset' %}">Forgot your password?</a></p> #}
+
+        <p class="text-center text-secondary small mt-5 mb-0">Need access? Contact your programme administrator.</p>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+  (function () {
+    var btn = document.getElementById('togglePw');
+    var input = document.getElementById('{{ form.password.id_for_label }}');
+    if (!btn || !input) return;
+    btn.addEventListener('click', function () {
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.textContent = show ? 'Hide' : 'Show';
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      btn.setAttribute('aria-pressed', show);
+    });
+  })();
+</script>
+</body>
+</html>

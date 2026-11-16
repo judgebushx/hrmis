@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Programme Planning | HRMIS</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+body{background:#f4f6fa;color:#17212f}.wrap{max-width:1550px}.card{border:0;border-radius:12px;box-shadow:0 2px 8px rgba(15,35,65,.06)}
+.kpi{font-size:1.8rem;font-weight:700}.muted{font-size:.8rem;color:#718096}.table td,.table th{vertical-align:middle;font-size:.88rem}
+</style></head><body>
+<nav class="navbar navbar-dark bg-primary"><div class="container-fluid wrap">
+<a class="navbar-brand" href="{% url 'dashboard:programme-dashboard' %}">HRMIS | Housing Reconstruction</a>
+<div class="d-flex gap-2"><a class="btn btn-sm btn-outline-light" href="{% url 'dashboard:programme-dashboard' %}">Programme dashboard</a><a class="btn btn-sm btn-outline-light" href="{% url 'housing:house-list' %}">Housing registry</a></div>
+</div></nav>
+<main class="container-fluid wrap py-4">
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+<div><div class="small text-primary fw-semibold text-uppercase">Phase 3 · Programme planning</div><h2 class="mb-1">Reconstruction Planning &amp; Scheduling</h2><p class="text-secondary mb-0">Baseline schedules, planned versus actual progress and construction deadline monitoring</p></div>
+<div class="text-end"><div class="d-flex gap-2 justify-content-end mb-2"><a class="btn btn-sm btn-outline-primary" href="{% url 'scheduling:bulk-schedule' %}">Bulk scheduling</a><a class="btn btn-sm btn-outline-primary" href="{% url 'scheduling:programme-gantt' %}">Programme Gantt</a></div><span class="badge text-bg-primary">700-house target</span><div class="muted mt-1">Data as at {{ as_of|date:"d M Y" }}</div></div>
+</div>
+{% for message in messages %}<div class="alert alert-success alert-dismissible">{{ message }}<button class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+<div class="alert alert-info">
+<strong>Programme planning assumptions:</strong> commencement {{ plan.project_start|date:"d M Y" }} · construction completion deadline {{ plan.construction_deadline|date:"d M Y" }} · overall project end {{ plan.project_end|date:"d M Y" }}. The final three months are reserved for verification, handover and closeout.
+</div>
+<section class="row g-3 mb-4">
+<div class="col-6 col-lg-3"><div class="card p-3 h-100"><div class="muted">Houses with schedules</div><div class="kpi">{{ scheduled_count }}</div><div class="muted">Scheduled baseline records</div></div></div>
+<div class="col-6 col-lg-3"><div class="card p-3 h-100"><div class="muted">Unscheduled houses</div><div class="kpi text-warning">{{ unscheduled_count }}</div><div class="muted">Require baseline dates</div></div></div>
+<div class="col-6 col-lg-3"><div class="card p-3 h-100"><div class="muted">Behind schedule</div><div class="kpi text-danger">{{ behind_count }}</div><div class="muted">{{ overdue_milestones }} overdue milestones</div></div></div>
+<div class="col-6 col-lg-3"><div class="card p-3 h-100"><div class="muted">On track / ahead</div><div class="kpi text-success">{{ on_track_count|add:ahead_count }}</div><div class="muted">{{ ahead_count }} ahead · {{ on_track_count }} on track</div></div></div>
+</section>
+<div class="row g-3 mb-4">
+<div class="col-12 col-xl-5"><div class="card p-3 h-100">
+<h5>Programme dates and milestones</h5>
+<form method="post">{% csrf_token %}
+{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+<div class="mb-2"><label class="form-label">Programme name</label>{{ form.name }}{{ form.name.errors }}</div>
+<div class="row g-2">
+<div class="col-md-6"><label class="form-label">Commencement</label>{{ form.project_start }}{{ form.project_start.errors }}</div>
+<div class="col-md-6"><label class="form-label">Overall project end</label>{{ form.project_end }}{{ form.project_end.errors }}</div>
+<div class="col-12"><label class="form-label">Construction completion deadline</label>{{ form.construction_deadline }}{{ form.construction_deadline.errors }}</div>
+</div>
+<button class="btn btn-primary mt-3">Save programme dates</button>
+</form>
+<div class="border rounded p-3 mt-3 bg-light">
+<div class="muted">Time remaining to construction deadline</div>
+<div class="h4 mb-0">{{ construction_days_remaining }} days</div>
+<div class="muted">Negative values indicate the deadline has passed.</div>
+</div>
+</div></div>
+<div class="col-12 col-xl-7"><div class="card p-3 h-100">
+<h5>Programme schedule coverage</h5>
+<p class="muted">Every house needs a baseline start and construction completion date. Each active construction milestone should also have planned start and end dates.</p>
+<div class="mb-3"><div class="d-flex justify-content-between"><strong>House scheduling coverage</strong><span>{{ scheduled_count }} / {{ house_count }}</span></div><div class="progress" style="height:12px"><div class="progress-bar" style="width:{% if house_count %}{{ schedule_coverage_percent }}{% else %}0{% endif %}%"></div></div></div>
+<div class="row g-3">
+<div class="col-md-6"><div class="border rounded p-3"><div class="muted">Average planned progress to date</div><div class="h3 mb-0">{{ average_planned }}%</div></div></div>
+<div class="col-md-6"><div class="border rounded p-3"><div class="muted">Average actual verified progress</div><div class="h3 mb-0">{{ average_actual }}%</div></div></div>
+</div>
+<div class="alert alert-warning small mt-3 mb-0">Planned progress is time-phased from each milestone's baseline dates and weight. Actual progress uses only the latest supervisor-approved submission per milestone. Variance = actual minus planned; pending or returned submissions never increase actual progress.</div>
+</div></div>
+</div>
+<div class="card p-3 mb-4">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2"><div><h5 class="mb-1">Schedule monitoring and follow-up</h5><div class="muted">Identify overdue milestones, houses without recent approved updates and projected completion risks.</div></div>
+<form method="get" class="d-flex align-items-end gap-2"><div><label class="form-label small mb-1">No approved update for</label><select name="inactive_days" class="form-select form-select-sm"><option value="14" {% if inactive_days == 14 %}selected{% endif %}>14 days</option><option value="30" {% if inactive_days == 30 %}selected{% endif %}>30 days</option><option value="45" {% if inactive_days == 45 %}selected{% endif %}>45 days</option><option value="60" {% if inactive_days == 60 %}selected{% endif %}>60 days</option><option value="90" {% if inactive_days == 90 %}selected{% endif %}>90 days</option><option value="120" {% if inactive_days == 120 %}selected{% endif %}>120 days</option></select></div><button class="btn btn-sm btn-primary">Apply</button></form></div>
+<div class="row g-2 my-3"><div class="col-md-3"><div class="border rounded p-2"><div class="muted">Overdue milestones</div><strong class="fs-4 text-danger">{{ overdue_milestones }}</strong></div></div><div class="col-md-3"><div class="border rounded p-2"><div class="muted">No recent approved update</div><strong class="fs-4 text-warning">{{ no_progress_count }}</strong></div></div><div class="col-md-3"><div class="border rounded p-2"><div class="muted">Projected completion risks</div><strong class="fs-4 text-danger">{{ projected_risk_count }}</strong></div></div><div class="col-md-3"><div class="border rounded p-2"><div class="muted">Follow-up threshold</div><strong class="fs-4">{{ inactive_days }} days</strong></div></div></div>
+<div class="table-responsive"><table class="table table-sm table-hover mb-0"><thead class="table-light"><tr><th>House</th><th>Location</th><th>Engineer</th><th>Last approved update</th><th>Days since update</th><th>Verified progress</th><th>Forecast completion</th><th>Monitoring flags</th></tr></thead><tbody>
+{% for row in alert_rows %}<tr><td><a href="{% url 'scheduling:house-schedule-edit' row.house.pk %}">{{ row.house.house_id }}</a></td><td>{{ row.location }}</td><td>{{ row.engineer }}</td><td>{% if row.metrics.last_approved_at %}{{ row.metrics.last_approved_at|date:"d M Y" }}{% else %}No approved update{% endif %}</td><td>{{ row.metrics.days_since_update }}</td><td>{{ row.metrics.actual }}%</td><td>{% if row.metrics.projected_finish %}{{ row.metrics.projected_finish|date:"d M Y" }}{% else %}Insufficient progress data{% endif %}</td><td>{% if row.metrics.overdue_count %}<span class="badge text-bg-danger">{{ row.metrics.overdue_count }} overdue milestone(s)</span>{% endif %} {% if row.metrics.no_recent_approval %}<span class="badge text-bg-warning">No recent update</span>{% endif %} {% if row.metrics.projected_risk %}<span class="badge text-bg-danger">Completion risk</span>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="8" class="text-center text-secondary py-3">No houses currently require follow-up.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+<div class="card">
+<div class="card-header bg-white d-flex justify-content-between align-items-center"><strong>House-level reconstruction schedule register</strong><span class="muted">{{ rows|length }} houses</span></div>
+<div class="px-3 pt-2 muted">Blue bars show where each house’s baseline construction period sits within the programme calendar. Bar length represents scheduled duration, not work completed. Use Planned progress and Actual verified for progress comparisons.</div>
+<div class="table-responsive"><table class="table table-hover mb-0">
+<thead class="table-light"><tr><th>House ID</th><th>Location</th><th>Engineer</th><th>Baseline start</th><th>Baseline completion</th><th>Baseline schedule window</th><th>Planned progress</th><th>Actual verified</th><th>Variance</th><th>Schedule status</th><th></th></tr></thead>
+<tbody>{% for row in rows %}
+<tr>
+<td><strong>{{ row.house.house_id }}</strong><div class="muted">{{ row.house.beneficiary_name }}</div></td>
+<td>{{ row.location }}</td><td>{{ row.engineer }}</td>
+<td>{% if row.schedule and row.schedule.baseline_start %}{{ row.schedule.baseline_start|date:"d M Y" }}{% else %}—{% endif %}</td>
+<td>{% if row.schedule and row.schedule.baseline_completion %}{{ row.schedule.baseline_completion|date:"d M Y" }}{% else %}—{% endif %}</td>
+<td style="min-width:170px"><div class="position-relative bg-light rounded" style="height:12px" title="{% if row.schedule and row.schedule.effective_start and row.schedule.effective_completion %}Scheduled construction window: {{ row.schedule.effective_start|date:'d M Y' }} to {{ row.schedule.effective_completion|date:'d M Y' }}{% else %}No complete baseline schedule{% endif %}" aria-label="Baseline schedule window, not percentage complete"><div class="position-absolute bg-primary rounded" style="left:{{ row.timeline_left }}%;width:{{ row.timeline_width }}%;height:12px"></div></div><div class="muted mt-1">{% if row.schedule and row.schedule.effective_start and row.schedule.effective_completion %}{{ row.schedule.effective_start|date:"d M Y" }} – {{ row.schedule.effective_completion|date:"d M Y" }}{% else %}Not scheduled{% endif %}</div></td>
+<td>{{ row.metrics.planned }}%</td><td>{{ row.metrics.actual }}%</td>
+<td class="{% if row.metrics.variance < 0 %}text-danger{% elif row.metrics.variance > 0 %}text-success{% endif %}">{{ row.metrics.variance }} pp</td>
+<td>
+{% if row.metrics.status == "BEHIND" %}<span class="badge text-bg-danger">{{ row.metrics.status_label }}</span>
+{% elif row.metrics.status == "AHEAD" %}<span class="badge text-bg-success">{{ row.metrics.status_label }}</span>
+{% elif row.metrics.status == "ON_TRACK" %}<span class="badge text-bg-primary">{{ row.metrics.status_label }}</span>
+{% elif row.metrics.status == "ON_HOLD" %}<span class="badge text-bg-warning">{{ row.metrics.status_label }}</span>
+{% elif row.metrics.status == "COMPLETE" %}<span class="badge text-bg-success">{{ row.metrics.status_label }}</span>
+{% else %}<span class="badge text-bg-secondary">{{ row.metrics.status_label }}</span>{% endif %}
+{% if row.metrics.overdue_count %}<div class="muted text-danger">{{ row.metrics.overdue_count }} overdue milestones</div>{% endif %}
+</td>
+<td><a class="btn btn-sm btn-outline-primary" href="{% url 'scheduling:house-schedule-edit' row.house.pk %}">Set schedule</a></td>
+</tr>
+{% empty %}<tr><td colspan="11" class="text-center text-secondary py-4">No houses registered.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+<p class="text-center muted mt-3">HRMIS · Programme planning and scheduling · Approved progress only</p>
+</main></body></html>

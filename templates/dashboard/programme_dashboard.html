@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Programme Dashboard | HRMIS</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<style>
+:root{--hrmis-blue:#0d6efd}
+body{background:#f4f6fa;color:#17212f}
+.navbar{background:var(--hrmis-blue)}
+.dashboard-wrap{max-width:1600px}
+.kpi-card{border:0;border-radius:14px;box-shadow:0 2px 8px rgba(15,35,65,.07);height:100%}
+.kpi-label{font-size:.78rem;color:#687789}
+.kpi-value{font-size:2rem;font-weight:700;line-height:1.2}
+.section-card{border:0;border-radius:12px;box-shadow:0 2px 8px rgba(15,35,65,.06)}
+.section-title{font-weight:650}
+.map-panel{height:440px;border-radius:10px;overflow:hidden}
+.chart-panel{height:300px;position:relative}
+.table thead th{white-space:nowrap;font-size:.82rem}
+.table td{font-size:.86rem;vertical-align:middle}
+.progress{height:9px;background:#e9edf3}
+.small-muted{font-size:.78rem;color:#718096}
+.legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+@media(max-width:768px){.map-panel{height:340px}.chart-panel{height:260px}.kpi-value{font-size:1.65rem}}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-dark">
+  <div class="container-fluid dashboard-wrap">
+    <a class="navbar-brand fw-semibold" href="{% url 'housing:house-list' %}">HRMIS <span class="fw-normal">| Housing Reconstruction</span></a>
+    <div class="d-flex align-items-center gap-3 text-white">
+      <span class="small">{{ request.user.get_full_name|default:request.user.username }}</span>
+      <a class="btn btn-sm btn-outline-light" href="{% url 'scheduling:programme-schedule' %}">Planning &amp; Scheduling</a>
+      <a class="btn btn-sm btn-outline-light" href="{% url 'housing:house-list' %}">Housing registry</a>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-light">Sign out</button></form>
+    </div>
+  </div>
+</nav>
+
+<main class="container-fluid dashboard-wrap py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+    <div>
+      <div class="small text-primary fw-semibold text-uppercase">IOM Micronesia · Programme monitoring</div>
+      <h2 class="mb-1">Housing Reconstruction Programme</h2>
+      <p class="text-secondary mb-0">Management overview of the 700-house reconstruction target</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-primary" href="{% url 'dashboard:programme-export' %}?island={{ selected_island }}&municipality={{ selected_municipality }}&engineer={{ selected_engineer }}&status={{ selected_status }}&stale_days={{ stale_days }}&q={{ search|urlencode }}"> Export Excel</a>
+      <a class="btn btn-primary" href="{% url 'progress:progress-review-list' %}">Review queue <span class="badge text-bg-light text-primary">{{ pending_count }}</span></a>
+    </div>
+  </div>
+
+  <div class="alert alert-light border small mb-3">
+    <strong>How progress is calculated:</strong> only the latest supervisor-approved submission for each active construction milestone contributes. Programme progress is the sum of house-level verified progress divided by the fixed target of 700. When filters are applied, the KPIs and charts show the selected scope's contribution to that programme target.
+  </div>
+
+  <section class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+      <div class="card kpi-card"><div class="card-body">
+        <div class="kpi-label">Houses registered</div>
+        <div class="kpi-value">{{ registered_count }} <span class="fs-6 fw-normal text-secondary">/ {{ target }}</span></div>
+        <div class="progress mt-2"><div class="progress-bar" role="progressbar" style="width:{% if registration_coverage > 100 %}100{% else %}{{ registration_coverage }}{% endif %}%"></div></div>
+        <div class="small-muted mt-2">{{ registration_coverage }}% of programme target in current scope</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="card kpi-card"><div class="card-body">
+        <div class="kpi-label">Under reconstruction</div>
+        <div class="kpi-value">{{ in_progress_count }}</div>
+        <div class="small-muted mt-2">House status: Under reconstruction</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="card kpi-card"><div class="card-body">
+        <div class="kpi-label">Completed / handed over</div>
+        <div class="kpi-value text-success">{{ completed_count }}</div>
+        <div class="small-muted mt-2">{{ handed_over_count }} formally marked as handed over</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="card kpi-card"><div class="card-body">
+        <div class="kpi-label">Pending supervisor reviews</div>
+        <div class="kpi-value text-warning">{{ pending_count }}</div>
+        <div class="small-muted mt-2">{{ changes_requested_count }} submissions returned for changes</div>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="row g-3 mb-4">
+    <div class="col-12 col-xl-8">
+      <div class="card section-card h-100"><div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div><div class="section-title">Verified reconstruction progress</div><div class="small-muted">Contribution of the selected houses to the 700-house programme target</div></div>
+          <div class="text-end"><div class="display-6 fw-bold text-primary">{{ programme_progress }}%</div><div class="small-muted">Average among registered: {{ average_registered_progress }}%</div></div>
+        </div>
+        <div class="progress mt-3"><div class="progress-bar" role="progressbar" style="width:{% if programme_progress > 100 %}100{% else %}{{ programme_progress }}{% endif %}%"></div></div>
+        <div class="row g-3 mt-2">
+          <div class="col-6 col-md-3"><div class="small-muted">Assigned engineers' houses</div><div class="h4 mb-0">{{ assigned_count }}</div></div>
+          <div class="col-6 col-md-3"><div class="small-muted">Unassigned houses</div><div class="h4 mb-0">{{ unassigned_count }}</div></div>
+          <div class="col-6 col-md-3"><div class="small-muted">On hold</div><div class="h4 mb-0">{{ on_hold_count }}</div></div>
+          <div class="col-6 col-md-3"><div class="small-muted">No approved progress yet</div><div class="h4 mb-0">{{ no_approved_progress_count }}</div></div>
+        </div>
+      </div></div>
+    </div>
+    <div class="col-12 col-xl-4">
+      <div class="card section-card h-100"><div class="card-body">
+        <div class="section-title mb-1">Evidence and quality assurance</div>
+        <div class="small-muted mb-3">Photographic evidence linked to houses in the selected scope</div>
+        <div class="row text-center g-2">
+          <div class="col-4"><div class="h3 mb-0">{{ photo_count }}</div><div class="small-muted">Photos</div></div>
+          <div class="col-4"><div class="h3 mb-0 text-success">{{ photo_gps_passed }}</div><div class="small-muted">GPS passed</div></div>
+          <div class="col-4"><div class="h3 mb-0 text-danger">{{ photo_gps_failed }}</div><div class="small-muted">GPS failed</div></div>
+        </div>
+        <hr>
+        <div class="d-flex justify-content-between small"><span>GPS pass rate</span><strong>{% if photo_count %}{% widthratio photo_gps_passed photo_count 100 %}%{% else %}—{% endif %}</strong></div>
+        <div class="progress mt-2"><div class="progress-bar bg-success" style="width:{% if photo_count %}{% widthratio photo_gps_passed photo_count 100 %}{% else %}0{% endif %}%"></div></div>
+        <div class="small-muted mt-2">{{ approved_submission_count }} approved · {{ submission_count }} total submissions · {{ blocked_submission_count }} latest blocked milestone reports</div>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="card section-card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-xl-3">
+          <label class="form-label small fw-semibold">Search houses / engineer</label>
+          <input class="form-control" name="q" value="{{ search }}" placeholder="House ID, beneficiary, village or engineer">
+        </div>
+        <div class="col-6 col-xl-2">
+          <label class="form-label small fw-semibold">Island / State</label>
+          <select class="form-select" name="island"><option value="">All islands</option>
+            {% for island in islands %}<option value="{{ island.pk }}" {% if selected_island == island.pk|stringformat:'s' %}selected{% endif %}>{{ island.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-xl-2">
+          <label class="form-label small fw-semibold">Municipality</label>
+          <select class="form-select" name="municipality"><option value="">All municipalities</option>
+            {% for municipality in municipalities %}<option value="{{ municipality.pk }}" {% if selected_municipality == municipality.pk|stringformat:'s' %}selected{% endif %}>{{ municipality.name }} · {{ municipality.island.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-xl-2">
+          <label class="form-label small fw-semibold">Engineer</label>
+          <select class="form-select" name="engineer"><option value="">All engineers</option>
+            {% for engineer in engineers %}<option value="{{ engineer.pk }}" {% if selected_engineer == engineer.pk|stringformat:'s' %}selected{% endif %}>{{ engineer.user.get_full_name|default:engineer.employee_id }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-xl-1">
+          <label class="form-label small fw-semibold">Status</label>
+          <select class="form-select" name="status"><option value="">All</option>
+            {% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-xl-1">
+          <label class="form-label small fw-semibold">Stale after</label>
+          <select class="form-select" name="stale_days">
+            {% for days in stale_days_options %}<option value="{{ days }}" {% if stale_days == days %}selected{% endif %}>{{ days }} days</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-xl-1 d-flex gap-2">
+          <button class="btn btn-primary flex-grow-1">Apply</button>
+          <a class="btn btn-outline-secondary" href="{% url 'dashboard:programme-dashboard' %}">Reset</a>
+        </div>
+      </form>
+      <div class="small text-secondary mt-2">All KPIs, charts, map markers and follow-up lists reflect the selected geography, engineer and status. The follow-up threshold is {{ stale_days }} days.</div>
+    </div>
+  </section>
+
+  <section class="card section-card mb-4">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span class="section-title">Construction bottlenecks and follow-up</span>
+      <span class="badge text-bg-warning">{{ stale_house_count }} houses require attention</span>
+    </div>
+    <div class="card-body">
+      <div class="alert alert-light border small mb-3">
+        A house is flagged when it is Registered or Under reconstruction and has had no supervisor-approved progress update for at least {{ stale_days }} days. If it has never received an approved update, the registration date is used as the starting point. On-hold, completed and handed-over houses are excluded. Pending and returned submissions do not reset the approved-progress clock.
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-3"><div class="p-3 rounded bg-light h-100"><div class="small-muted">Stale houses</div><div class="h3 mb-0 text-warning">{{ stale_house_count }}</div></div></div>
+        <div class="col-6 col-lg-3"><div class="p-3 rounded bg-light h-100"><div class="small-muted">Threshold</div><div class="h3 mb-0">{{ stale_days }} days</div></div></div>
+        <div class="col-6 col-lg-3"><div class="p-3 rounded bg-light h-100"><div class="small-muted">Latest blocked milestone reports</div><div class="h3 mb-0">{{ blocked_submission_count }}</div></div></div>
+        <div class="col-6 col-lg-3"><div class="p-3 rounded bg-light h-100"><div class="small-muted">No approved progress recorded</div><div class="h3 mb-0">{{ no_approved_progress_count }}</div></div></div>
+      </div>
+      <h6 class="fw-semibold">Milestone bottlenecks</h6>
+      <div class="table-responsive mb-4">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light"><tr><th>Milestone</th><th>Stale incomplete approved work</th><th>Old pending submissions</th><th>Submissions without an approval</th></tr></thead>
+          <tbody>{% for row in bottleneck_rows %}
+            <tr><td>{{ row.stage.name }}</td><td>{% if row.stale_incomplete %}<span class="badge text-bg-warning">{{ row.stale_incomplete }}</span>{% else %}0{% endif %}</td><td>{% if row.awaiting_review %}<span class="badge text-bg-danger">{{ row.awaiting_review }}</span>{% else %}0{% endif %}</td><td>{{ row.no_approved }}</td></tr>
+          {% empty %}<tr><td colspan="4" class="text-secondary">No active milestones configured.</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <h6 class="fw-semibold mb-0">Houses requiring follow-up</h6>
+        <span class="small-muted">Oldest approved update / longest waiting first · {{ stale_days }}+ days</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light"><tr><th>House</th><th>Location</th><th>Engineer</th><th>Last approved update</th><th>Days</th><th>Verified progress</th><th></th></tr></thead>
+          <tbody>{% for house in stale_houses %}
+            <tr>
+              <td><a href="{% url 'housing:house-detail' house.pk %}" class="fw-semibold">{{ house.house_id }}</a><div class="small-muted">{{ house.beneficiary_name|default:'Beneficiary not recorded' }}</div></td>
+              <td>{{ house.village.name }}, {{ house.village.municipality.name }}<div class="small-muted">{{ house.village.municipality.island.name }}</div></td>
+              <td>{{ house.assigned_engineer|default:'Unassigned' }}</td>
+              <td>{% if house.dashboard_last_update == 'No approved update yet' %}<span class="text-danger">Never approved</span>{% else %}{{ house.dashboard_last_update }}{% endif %}</td>
+              <td><span class="badge text-bg-warning">{{ house.dashboard_days_since_update }}</span></td>
+              <td>{{ house.dashboard_progress }}%</td>
+              <td><a class="btn btn-sm btn-outline-primary" href="{% url 'progress:house-progress' house.pk %}">Open</a></td>
+            </tr>
+          {% empty %}<tr><td colspan="7" class="text-center text-success py-3">No active houses have exceeded the selected follow-up threshold.</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="card section-card mb-4">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center">
+      <span class="section-title">Geographical distribution of registered houses</span>
+      <span class="small-muted">{{ registered_count }} mapped houses in current scope</span>
+    </div>
+    <div class="card-body">
+      <div class="d-flex flex-wrap gap-3 small mb-2">
+        <span><span class="legend-dot" style="background:#6c757d"></span>Registered</span>
+        <span><span class="legend-dot" style="background:#0d6efd"></span>Under reconstruction</span>
+        <span><span class="legend-dot" style="background:#198754"></span>Completed / handed over</span>
+        <span><span class="legend-dot" style="background:#ffc107"></span>On hold</span>
+        <span><span class="legend-dot" style="background:#fd7e14"></span>Overdue follow-up (orange outline)</span>
+      </div>
+      <div id="programme-map" class="map-panel"></div>
+      {% if not map_points %}<div class="small text-secondary mt-2">No houses match the selected filters.</div>{% endif %}
+    </div>
+  </section>
+
+  <section class="row g-3 mb-4">
+    <div class="col-12 col-lg-6"><div class="card section-card h-100"><div class="card-body">
+      <div class="section-title">House status distribution</div><div class="small-muted mb-2">Current registered house status</div>
+      <div class="chart-panel"><canvas id="statusChart"></canvas></div>
+    </div></div></div>
+    <div class="col-12 col-lg-6"><div class="card section-card h-100"><div class="card-body">
+      <div class="section-title">House distribution by island</div><div class="small-muted mb-2">Number of registered houses by island/state</div>
+      <div class="chart-panel"><canvas id="islandChart"></canvas></div>
+    </div></div></div>
+    <div class="col-12 col-lg-6"><div class="card section-card h-100"><div class="card-body">
+      <div class="section-title">Verified progress by milestone</div><div class="small-muted mb-2">Average approved completion across houses in the selected scope</div>
+      <div class="chart-panel"><canvas id="stageChart"></canvas></div>
+    </div></div></div>
+    <div class="col-12 col-lg-6"><div class="card section-card h-100"><div class="card-body">
+      <div class="section-title">Engineer performance</div><div class="small-muted mb-2">Average verified progress of currently assigned houses · top 10 by workload</div>
+      <div class="chart-panel"><canvas id="engineerChart"></canvas></div>
+    </div></div></div>
+  </section>
+
+  <section class="card section-card mb-4">
+    <div class="card-header bg-white section-title">Milestone performance</div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light"><tr><th>Construction milestone</th><th>Weight</th><th>Houses with approved update</th><th>Average verified completion</th><th>Weighted contribution</th></tr></thead>
+        <tbody>{% for row in stage_rows %}
+          <tr><td>{{ row.stage.name }}</td><td>{{ row.weight }}%</td><td>{{ row.houses_updated }}</td><td style="min-width:180px"><div class="d-flex justify-content-between small"><span>{{ row.average_completion }}%</span></div><div class="progress"><div class="progress-bar" style="width:{{ row.average_completion }}%"></div></div></td><td>{{ row.weighted_contribution }}%</td></tr>
+        {% empty %}<tr><td colspan="5" class="text-center text-secondary py-3">No active construction milestones configured.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card section-card mb-4">
+    <div class="card-header bg-white section-title">Engineer workload and performance</div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light"><tr><th>Engineer</th><th>Employee ID</th><th>Assigned houses</th><th>Average verified progress</th><th>Submissions</th><th>Approved</th><th>Pending</th><th>Changes requested</th></tr></thead>
+        <tbody>{% for row in engineer_rows %}
+          <tr><td>{{ row.profile.user.get_full_name|default:row.profile.user.username }}</td><td>{{ row.profile.employee_id }}</td><td>{{ row.house_count }}</td><td>{{ row.average_progress }}%</td><td>{{ row.submissions }}</td><td><span class="text-success fw-semibold">{{ row.approved }}</span></td><td><span class="text-warning fw-semibold">{{ row.pending }}</span></td><td>{{ row.changes_requested }}</td></tr>
+        {% empty %}<tr><td colspan="8" class="text-center text-secondary py-3">No engineer assignments in the selected scope.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card section-card mb-4">
+    <div class="card-header bg-white section-title">House-level reconstruction register</div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light"><tr><th>House ID</th><th>Location</th><th>Engineer</th><th>Status</th><th>Verified progress</th><th>Last approved update</th><th>Pending reviews</th><th></th></tr></thead>
+        <tbody>{% for house in houses %}
+          <tr>
+            <td class="fw-semibold"><a href="{% url 'housing:house-detail' house.pk %}">{{ house.house_id }}</a><div class="small-muted">{{ house.beneficiary_name|default:'Beneficiary not recorded' }}</div></td>
+            <td>{{ house.village.name }}, {{ house.village.municipality.name }}<div class="small-muted">{{ house.village.municipality.island.name }}</div></td>
+            <td>{{ house.assigned_engineer|default:'Unassigned' }}</td>
+            <td><span class="badge text-bg-light">{{ house.get_status_display }}</span></td>
+            <td style="min-width:150px"><div class="d-flex justify-content-between small"><span>{{ house.dashboard_progress }}%</span></div><div class="progress"><div class="progress-bar" style="width:{{ house.dashboard_progress }}%"></div></div></td>
+            <td>{% if house.dashboard_stale %}<span class="badge text-bg-warning">{{ house.dashboard_days_since_update }} days</span>{% endif %}{{ house.dashboard_last_update }}</td>
+            <td>{% if house.dashboard_pending %}<span class="badge text-bg-warning">{{ house.dashboard_pending }}</span>{% else %}0{% endif %}</td>
+            <td class="d-flex gap-1"><a class="btn btn-sm btn-outline-primary" href="{% url 'progress:house-progress' house.pk %}">Progress</a>{% if request.user.is_superuser %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'scheduling:house-schedule-edit' house.pk %}">Schedule</a>{% endif %}</td>
+          </tr>
+        {% empty %}<tr><td colspan="8" class="text-center text-secondary py-4">No houses match the selected filters.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+      <span class="small-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} houses</span>
+      <div class="btn-group">
+        {% if page_obj.has_previous %}<a class="btn btn-sm btn-outline-secondary" href="?island={{ selected_island }}&municipality={{ selected_municipality }}&engineer={{ selected_engineer }}&status={{ selected_status }}&stale_days={{ stale_days }}&q={{ search|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+        {% if page_obj.has_next %}<a class="btn btn-sm btn-outline-secondary" href="?island={{ selected_island }}&municipality={{ selected_municipality }}&engineer={{ selected_engineer }}&status={{ selected_status }}&stale_days={{ stale_days }}&q={{ search|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="row g-3 mb-4">
+    <div class="col-12 col-lg-6">
+      <div class="card section-card h-100"><div class="card-header bg-white section-title">Island / state summary</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Island</th><th>Houses</th><th>Active</th><th>Completed</th><th>Avg. verified progress</th></tr></thead><tbody>
+      {% for row in island_rows %}<tr><td><a href="?island={{ row.id }}&stale_days={{ stale_days }}">{{ row.name }}</a></td><td>{{ row.houses }}</td><td>{{ row.in_progress }}</td><td>{{ row.completed }}</td><td>{{ row.average_progress }}%</td></tr>{% empty %}<tr><td colspan="5" class="text-secondary">No data.</td></tr>{% endfor %}
+      </tbody></table></div></div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="card section-card h-100"><div class="card-header bg-white section-title">Municipality summary</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Island</th><th>Municipality</th><th>Houses</th><th>Avg. verified progress</th></tr></thead><tbody>
+      {% for row in municipality_rows %}<tr><td>{{ row.island }}</td><td><a href="?municipality={{ row.id }}&stale_days={{ stale_days }}">{{ row.name }}</a></td><td>{{ row.houses }}</td><td>{{ row.average_progress }}%</td></tr>{% empty %}<tr><td colspan="4" class="text-secondary">No data.</td></tr>{% endfor %}
+      </tbody></table></div></div>
+    </div>
+  </section>
+
+  <footer class="small-muted text-center py-2">HRMIS · Housing Reconstruction Programme Monitoring · Figures reflect current database records and selected filters.</footer>
+</main>
+
+{{ map_points|json_script:"programme-map-points" }}
+{{ status_chart|json_script:"status-chart-data" }}
+{{ island_chart|json_script:"island-chart-data" }}
+{{ stage_chart|json_script:"stage-chart-data" }}
+{{ engineer_chart|json_script:"engineer-chart-data" }}
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  const points = JSON.parse(document.getElementById("programme-map-points").textContent);
+  const map = L.map("programme-map").setView([7.45,151.85],6);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+    maxZoom:19,
+    referrerPolicy:"strict-origin-when-cross-origin",
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>'
+  }).addTo(map);
+  const clusters = L.markerClusterGroup();
+  const bounds = [];
+  const markerColours = {
+    "REGISTERED":"#6c757d",
+    "IN_PROGRESS":"#0d6efd",
+    "COMPLETED":"#198754",
+    "HANDED_OVER":"#198754",
+    "ON_HOLD":"#ffc107"
+  };
+  points.forEach(function(point){
+    const lat = Number(point.lat), lon = Number(point.lon);
+    if(!Number.isFinite(lat)||!Number.isFinite(lon)||lat < -90||lat > 90||lon < -180||lon > 180) return;
+    const colour = markerColours[point.status_code] || "#6c757d";
+    const marker = L.circleMarker([lat,lon],{
+      radius:point.stale?10:8, color:point.stale?"#fd7e14":"#ffffff", weight:point.stale?4:2, fillColor:colour, fillOpacity:.95
+    });
+    const popup = document.createElement("div");
+    const title = document.createElement("strong"); title.textContent = point.id;
+    const location = document.createElement("div"); location.textContent = point.location;
+    const status = document.createElement("div"); status.textContent = "Status: " + point.status;
+    const progress = document.createElement("div"); progress.textContent = "Verified progress: " + point.progress + "%";
+    const engineer = document.createElement("div"); engineer.textContent = "Engineer: " + point.engineer;
+    const lastUpdate = document.createElement("div"); lastUpdate.textContent = "Last approved update: " + point.last_update;
+    const stale = document.createElement("div"); stale.textContent = point.stale ? "FOLLOW-UP REQUIRED: " + point.days_since_update + " days without approved progress" : "Within follow-up threshold";
+    const link = document.createElement("a"); link.href = point.url; link.textContent = "Open house record";
+    popup.append(title,location,status,progress,engineer,lastUpdate,stale,link);
+    marker.bindPopup(popup);
+    clusters.addLayer(marker);
+    bounds.push([lat,lon]);
+  });
+  map.addLayer(clusters);
+  if(bounds.length) map.fitBounds(bounds,{padding:[25,25],maxZoom:13});
+  setTimeout(function(){map.invalidateSize();},250);
+
+  function readJson(id){return JSON.parse(document.getElementById(id).textContent);}
+  function makeChart(id,type,labels,values,label,options){
+    const canvas=document.getElementById(id);
+    if(!canvas || !window.Chart) return;
+    new Chart(canvas,{
+      type:type,
+      data:{labels:labels,datasets:[{label:label,data:values,borderWidth:1}]},
+      options:Object.assign({
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:type==="doughnut",position:"bottom"}},
+        scales:type==="doughnut"?{}:{y:{beginAtZero:true}}
+      },options||{})
+    });
+  }
+  const status=readJson("status-chart-data");
+  makeChart("statusChart","doughnut",status.labels,status.values,"Houses");
+  const island=readJson("island-chart-data");
+  makeChart("islandChart","bar",island.labels,island.values,"Houses");
+  const stage=readJson("stage-chart-data");
+  makeChart("stageChart","bar",stage.labels,stage.values,"Average verified completion (%)",{indexAxis:"y",scales:{x:{beginAtZero:true,max:100}}});
+  const engineer=readJson("engineer-chart-data");
+  makeChart("engineerChart","bar",engineer.labels,engineer.values,"Average verified progress (%)",{indexAxis:"y",scales:{x:{beginAtZero:true,max:100}}});
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

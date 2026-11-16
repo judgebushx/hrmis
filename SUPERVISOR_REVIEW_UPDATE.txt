@@ -1,0 +1,39 @@
+HRMIS SUPERVISOR REVIEW DASHBOARD UPDATE
+
+This update extends the existing progress review workflow. It does not add or alter database models and requires no migration.
+
+INCLUDES
+- Review queue counts for pending, approved and changes-requested submissions.
+- Search by House ID, beneficiary, milestone, employee ID or engineer name.
+- Review-status filtering and pagination.
+- Review detail with submission remarks, previous approved milestone value,
+  registered house coordinates, original photographs, EXIF capture time,
+  photo GPS, distance from house, location-validation flag and SHA-256 checksum.
+- Approve or request changes; comments are mandatory for requested changes.
+- Transactional decision and audit event.
+- Already-reviewed submissions are read-only and cannot be silently overwritten.
+
+ACCESS
+- Review queue and decision pages remain restricted to Django superusers.
+- Engineers continue to submit progress only for houses currently assigned to them.
+
+INSTALLATION
+1. Back up the HRMIS project and PostgreSQL database.
+2. Extract this ZIP into the parent folder containing the HRMIS project.
+3. Preserve .env, PostgreSQL data and the media directory.
+4. From the folder containing manage.py, run:
+   python manage.py check
+   python manage.py runserver
+No migration is required.
+
+TEST
+1. Sign in as a Django superuser and open /progress/reviews/.
+2. Review a pending submission and inspect the original photo and GPS details.
+3. Approve it; verify official weighted house progress updates.
+4. Submit another update and request changes; comments must be supplied.
+5. Open a reviewed record; it should be read-only.
+6. Verify an engineer receives a permission denial at /progress/reviews/.
+
+IMPORTANT
+- Review remains superuser-only, matching the existing project policy.
+- EXIF GPS can be spoofed; the 15 m check validates embedded metadata, not physical presence.

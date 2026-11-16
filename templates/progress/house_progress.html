@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ house.house_id }} | Reconstruction progress | HRMIS</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"></head>
+<body class="bg-light"><nav class="navbar navbar-dark bg-primary"><div class="container-fluid"><a class="navbar-brand" href="{% url 'housing:house-list' %}">HRMIS | Housing Reconstruction</a><span class="text-white">{{ request.user.get_full_name|default:request.user.username }}</span></div></nav>
+<main class="container-fluid px-3 px-lg-4 py-4" data-house-latitude="{{ house.latitude }}" data-house-longitude="{{ house.longitude }}"><a href="{% url 'housing:house-detail' house.pk %}">← Back to {{ house.house_id }}</a><div class="d-flex flex-wrap justify-content-between align-items-center mt-3 mb-3"><div><h2 class="mb-1">Reconstruction progress: {{ house.house_id }}</h2><div class="text-secondary">{{ house.beneficiary_name|default:'Beneficiary not recorded' }} · {{ house.village.name }}, {{ house.village.municipality.island.name }}</div></div><span class="badge text-bg-primary">{{ house.get_status_display }}</span></div>
+{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
+<div class="card border-0 shadow-sm mb-4"><div class="card-body"><div class="d-flex justify-content-between"><div><div class="text-secondary small">Supervisor-verified overall progress</div><div class="display-5 fw-semibold">{{ official_progress }}%</div></div><div class="text-end"><div class="text-secondary small">Active milestone weight</div><div class="h4">{{ total_weight }}%</div></div></div><div class="progress mt-2" role="progressbar" aria-valuenow="{{ official_progress }}" aria-valuemin="0" aria-valuemax="100" style="height:14px"><div class="progress-bar" style="width:{{ official_progress }}%"></div></div><small class="text-secondary">Only the latest approved submission for each milestone contributes to the official figure. Pending engineer submissions are shown separately below.</small></div></div>
+<div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white fw-semibold">Construction milestones</div><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Milestone</th><th>Weight</th><th>Verified completion</th><th>Latest approved update</th></tr></thead><tbody>{% for row in stage_rows %}<tr><td>{{ row.stage.name }}</td><td>{{ row.stage.weight }}%</td><td>{{ row.percentage }}%</td><td>{% if row.record %}{{ row.record.update_date|date:'d M Y' }}{% else %}<span class="text-secondary">No approved update</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="4" class="text-secondary">No active construction milestones configured. Ask the system administrator to configure stages.</td></tr>{% endfor %}</tbody></table></div></div>
+{% if comparisons %}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white fw-semibold">Before-and-after photographic comparison</div>
+  <div class="card-body">
+    <p class="small text-secondary">For each milestone, HRMIS compares the latest engineer submission with the most recent earlier supervisor-approved submission. This visual aid supports review; it does not automatically certify construction progress.</p>
+    {% for comparison in comparisons %}
+    <section class="border rounded mb-4 overflow-hidden">
+      <div class="bg-light border-bottom p-3">
+        <div class="fw-semibold">{{ comparison.stage.name }}</div>
+        <div class="small text-secondary">Previous approved site condition versus latest submitted evidence.</div>
+      </div>
+      <div class="row g-0">
+        <div class="col-lg-6 border-end">
+          <div class="p-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+              <strong>BEFORE · Previous approved submission</strong>
+              {% if comparison.before %}<span class="badge text-bg-success">Approved baseline</span>{% else %}<span class="badge text-bg-secondary">No baseline yet</span>{% endif %}
+            </div>
+            {% if comparison.before %}
+              <div class="small text-secondary mb-2">{{ comparison.before.update_date|date:'d M Y H:i' }} · {{ comparison.before.engineer }} · {{ comparison.before.percentage }}% completion</div>
+              {% if comparison.before.photos.all %}
+                <div class="row g-2">
+                  {% for photo in comparison.before.photos.all %}
+                  <div class="col-6">
+                    <a href="{{ photo.image.url }}" target="_blank" rel="noopener"><img src="{{ photo.image.url }}" alt="Previous approved {{ comparison.stage.name }} evidence" class="img-fluid rounded border" style="width:100%;height:190px;object-fit:contain;background:#f1f3f5"></a>
+                    <div class="small text-secondary mt-1">{{ photo.uploaded_at|date:'d M Y H:i' }} · {{ photo.distance_from_house }} m from house</div>
+                  </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="alert alert-light border small mb-0">The previous approved submission has no linked photographs.</div>
+              {% endif %}
+            {% else %}
+              <div class="alert alert-light border small mb-0">No earlier approved submission exists for this milestone. The latest submission can establish the first visual baseline once approved.</div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="p-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+              <strong>AFTER · Latest submission</strong>
+              {% if comparison.after.review_status == 'APPROVED' %}
+                <span class="badge text-bg-success">Approved</span>
+              {% elif comparison.after.review_status == 'REJECTED' %}
+                <span class="badge text-bg-danger">Changes requested</span>
+              {% else %}
+                <span class="badge text-bg-warning">Pending review</span>
+              {% endif %}
+            </div>
+            <div class="small text-secondary mb-2">{{ comparison.after.update_date|date:'d M Y H:i' }} · {{ comparison.after.engineer }} · {{ comparison.after.percentage }}% claimed</div>
+            {% if comparison.after.photos.all %}
+              <div class="row g-2">
+                {% for photo in comparison.after.photos.all %}
+                <div class="col-6">
+                  <a href="{{ photo.image.url }}" target="_blank" rel="noopener"><img src="{{ photo.image.url }}" alt="Latest {{ comparison.stage.name }} evidence" class="img-fluid rounded border" style="width:100%;height:190px;object-fit:contain;background:#f1f3f5"></a>
+                  <div class="small text-secondary mt-1">{{ photo.uploaded_at|date:'d M Y H:i' }} · {{ photo.distance_from_house }} m from house</div>
+                </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="alert alert-light border small mb-0">No photographs were attached to the latest submission.</div>
+            {% endif %}
+            {% if request.user.is_superuser %}
+              <a class="btn btn-sm btn-outline-primary mt-3" href="{% url 'progress:progress-review' comparison.after.pk %}">Open latest submission review</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if can_submit %}<div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white fw-semibold">Submit construction progress</div><div class="card-body"><p class="text-secondary">Submit a new update for a construction milestone. Updates are retained as history and require supervisor review before affecting official project progress.</p><form method="post" enctype="multipart/form-data">{% csrf_token %}{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}<div class="row g-3"><div class="col-md-4"><label class="form-label">Construction milestone</label>{{ form.stage }}{{ form.stage.errors }}</div><div class="col-md-3"><label class="form-label">Completion (%)</label>{{ form.percentage }}{{ form.percentage.errors }}</div><div class="col-md-5"><label class="form-label">Stage status</label>{{ form.status }}{{ form.status.errors }}</div><div class="col-12"><label class="form-label">Progress description / constraints</label>{{ form.remarks }}{{ form.remarks.errors }}</div><div class="col-12">
+<label class="form-label" for="progress-photos">Geo-tagged photographs (up to 10; max 10 MB each)</label>
+<input id="progress-photos" class="form-control" type="file" name="photos" accept="image/jpeg,image/png,image/heic,image/heif" multiple>
+<div class="form-text">Select original mobile photographs. HRMIS will read their embedded GPS metadata and check the distance from this house before submission. Screenshots and images forwarded through apps that strip location metadata will not pass.</div>
+<div id="photo-validation-summary" class="alert alert-secondary mt-3 mb-0" role="status" aria-live="polite">No photographs selected. You may submit progress without photographs, or select geo-tagged originals for validation.</div>
+<div id="photo-validation-results" class="list-group mt-2" aria-live="polite"></div>
+</div>
+<div class="col-12"><button id="progress-submit-button" class="btn btn-primary">Submit progress for review</button><span id="photo-validation-working" class="small text-secondary ms-2" hidden>Checking photograph metadata…</span></div></div></form></div></div>{% endif %}
+<div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white fw-semibold">Progress submission history</div><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Date</th><th>Milestone</th><th>Engineer</th><th>Claimed progress</th><th>Status</th><th>Review</th>{% if request.user.is_superuser %}<th></th>{% endif %}</tr></thead><tbody>{% for record in records %}<tr><td>{{ record.update_date|date:'d M Y H:i' }}</td><td>{{ record.stage.name }}</td><td>{{ record.engineer }}</td><td>{{ record.percentage }}%</td><td>{{ record.get_status_display }}</td><td>{% if record.review_status == 'APPROVED' %}<span class="badge text-bg-success">Approved</span>{% elif record.review_status == 'REJECTED' %}<span class="badge text-bg-danger">Changes requested</span>{% else %}<span class="badge text-bg-warning">Pending</span>{% endif %}{% if record.review_comments %}<div class="small text-secondary">{{ record.review_comments }}</div>{% endif %}</td>{% if request.user.is_superuser %}<td><a class="btn btn-sm btn-outline-primary" href="{% url 'progress:progress-review' record.pk %}">Review</a></td>{% endif %}</tr>{% empty %}<tr><td colspan="7" class="text-secondary">No progress updates submitted yet.</td></tr>{% endfor %}</tbody></table></div></div>
+<div class="card border-0 shadow-sm">
+<div class="card-header bg-white fw-semibold">Photographic evidence by progress submission</div>
+<div class="card-body">
+<p class="small text-secondary">Photographs are grouped under the exact engineer submission to which they were attached. Review status therefore applies to the submission and its evidence as a set.</p>
+
+{% for record in records %}
+<section class="border rounded mb-3 overflow-hidden">
+  <div class="bg-light border-bottom p-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+      <div>
+        <div class="fw-semibold">{{ record.stage.name }} · {{ record.percentage }}% claimed</div>
+        <div class="small text-secondary">Submitted {{ record.update_date|date:'d M Y H:i' }} by {{ record.engineer }}</div>
+      </div>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        {% if record.review_status == 'APPROVED' %}
+          <span class="badge text-bg-success">Approved</span>
+        {% elif record.review_status == 'REJECTED' %}
+          <span class="badge text-bg-danger">Changes requested</span>
+        {% else %}
+          <span class="badge text-bg-warning">Pending review</span>
+        {% endif %}
+        {% if request.user.is_superuser %}
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'progress:progress-review' record.pk %}">Open review</a>
+        {% endif %}
+      </div>
+    </div>
+    {% if record.reviewed_at %}
+      <div class="small text-secondary mt-2">Reviewed {{ record.reviewed_at|date:'d M Y H:i' }} by {{ record.reviewed_by|default:'Supervisor' }}</div>
+    {% endif %}
+    {% if record.review_comments %}
+      <div class="alert alert-secondary small mt-2 mb-0"><strong>Supervisor comments:</strong> {{ record.review_comments }}</div>
+    {% endif %}
+  </div>
+  <div class="p-3">
+    <div class="row g-3">
+      {% for photo in record.photos.all %}
+      <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+        <div class="card h-100">
+          <a href="{{ photo.image.url }}" target="_blank" rel="noopener">
+            <img src="{{ photo.image.url }}" class="card-img-top" alt="{{ house.house_id }} {{ record.stage.name }}" style="width:100%;height:190px;object-fit:contain;background:#f1f3f5">
+          </a>
+          <div class="card-body p-2">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+              <span class="small fw-semibold">{{ photo.stage.name }}</span>
+              {% if photo.location_verified and photo.distance_from_house <= 15 %}
+                <span class="badge text-bg-success">GPS passed</span>
+              {% else %}
+                <span class="badge text-bg-danger">GPS check failed</span>
+              {% endif %}
+            </div>
+            <div class="small text-secondary">Photo GPS: {{ photo.photo_latitude }}, {{ photo.photo_longitude }}</div>
+            <div class="small text-secondary">Distance: <strong>{{ photo.distance_from_house }} m</strong> from house</div>
+            <div class="small text-secondary">EXIF capture: {{ photo.captured_at_exif|default:'Not available' }}</div>
+            <div class="small text-secondary">Uploaded: {{ photo.uploaded_at|date:'d M Y H:i' }}</div>
+            <div class="small text-secondary">Engineer: {{ photo.engineer }}</div>
+            <div class="small text-secondary text-break">SHA-256: {{ photo.image_checksum }}</div>
+            {% if photo.description %}<div class="small mt-2">{{ photo.description }}</div>{% endif %}
+            <a class="small d-inline-block mt-2" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat={{ photo.photo_latitude }}&mlon={{ photo.photo_longitude }}#map=19/{{ photo.photo_latitude }}/{{ photo.photo_longitude }}">View photo GPS location</a>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12"><div class="small text-secondary">No photographs were attached to this submission.</div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% empty %}
+<div class="text-secondary">No progress submissions have been recorded for this house.</div>
+{% endfor %}
+
+{% if unlinked_photos %}
+<section class="border rounded mb-2 overflow-hidden">
+  <div class="bg-light border-bottom p-3">
+    <div class="fw-semibold">Legacy photographs not linked to a progress submission</div>
+    <div class="small text-secondary">These images were uploaded before submission-level photo linking was enabled. They are retained separately and are not attributed to a specific review decision.</div>
+  </div>
+  <div class="p-3"><div class="row g-3">
+    {% for photo in unlinked_photos %}
+    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+      <div class="card h-100">
+        <a href="{{ photo.image.url }}" target="_blank" rel="noopener"><img src="{{ photo.image.url }}" class="card-img-top" alt="{{ house.house_id }} legacy evidence" style="width:100%;height:190px;object-fit:contain;background:#f1f3f5"></a>
+        <div class="card-body p-2">
+          <div class="small fw-semibold">{{ photo.stage.name }}</div>
+          <div class="small text-secondary">Uploaded: {{ photo.uploaded_at|date:'d M Y H:i' }}</div>
+          <div class="small text-secondary">Distance: {{ photo.distance_from_house }} m from house</div>
+          <div class="small text-secondary">Engineer: {{ photo.engineer }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div></div>
+</section>
+{% endif %}
+</div></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    const main = document.querySelector("main[data-house-latitude]");
+    const input = document.getElementById("progress-photos");
+    const submitButton = document.getElementById("progress-submit-button");
+    const summary = document.getElementById("photo-validation-summary");
+    const results = document.getElementById("photo-validation-results");
+    const working = document.getElementById("photo-validation-working");
+    if (!main || !input || !submitButton || !summary || !results) return;
+
+    const houseLat = Number(main.dataset.houseLatitude);
+    const houseLon = Number(main.dataset.houseLongitude);
+    const MAX_DISTANCE_METRES = 15;
+    const MAX_FILE_BYTES = 10 * 1024 * 1024;
+    let validationRun = 0;
+    let validationPassed = true;
+
+    function distanceMetres(lat1, lon1, lat2, lon2) {
+        const radius = 6371008.8;
+        const rad = value => value * Math.PI / 180;
+        const dLat = rad(lat2 - lat1);
+        const dLon = rad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon / 2) ** 2;
+        return 2 * radius * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function showSummary(kind, message) {
+        summary.className = "alert mt-3 mb-0 alert-" + kind;
+        summary.textContent = message;
+    }
+
+    function addResult(fileName, kind, message, details) {
+        const item = document.createElement("div");
+        item.className = "list-group-item";
+        const heading = document.createElement("div");
+        heading.className = "d-flex flex-wrap justify-content-between gap-2";
+        const name = document.createElement("strong");
+        name.textContent = fileName;
+        const badge = document.createElement("span");
+        badge.className = "badge text-bg-" + (kind === "success" ? "success" : "danger");
+        badge.textContent = kind === "success" ? "GPS check passed" : "GPS check failed";
+        heading.append(name, badge);
+        const body = document.createElement("div");
+        body.className = "small text-secondary mt-1";
+        body.textContent = message + (details ? " · " + details : "");
+        item.append(heading, body);
+        results.appendChild(item);
+    }
+
+    function formatCaptureDate(tags) {
+        const value = tags.DateTimeOriginal || tags.CreateDate || tags.ModifyDate;
+        if (!value) return "Capture time not available in EXIF";
+        if (value instanceof Date && !Number.isNaN(value.getTime())) return "Captured: " + value.toLocaleString();
+        return "EXIF capture time: " + String(value);
+    }
+
+    async function validateFile(file) {
+        if (file.size > MAX_FILE_BYTES) {
+            return { ok: false, message: "File exceeds the 10 MB limit." };
+        }
+        if (!window.exifr || typeof window.exifr.parse !== "function") {
+            return { ok: false, message: "The GPS metadata reader could not load. Refresh the page and try again." };
+        }
+        let tags;
+        try {
+            tags = await window.exifr.parse(file, { gps: true, exif: true });
+        } catch (error) {
+            return { ok: false, message: "The image metadata could not be read. Select the original photo from the phone." };
+        }
+        if (!tags || !Number.isFinite(Number(tags.latitude)) || !Number.isFinite(Number(tags.longitude))) {
+            return { ok: false, message: "Complete GPS EXIF coordinates were not found (latitude and longitude are required)." };
+        }
+        const lat = Number(tags.latitude);
+        const lon = Number(tags.longitude);
+        if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+            return { ok: false, message: "The image contains invalid GPS coordinates." };
+        }
+        const distance = distanceMetres(houseLat, houseLon, lat, lon);
+        const detail = "Photo GPS: " + lat.toFixed(6) + ", " + lon.toFixed(6) +
+            " · House distance: " + distance.toFixed(1) + " m · " + formatCaptureDate(tags);
+        if (distance > MAX_DISTANCE_METRES) {
+            return { ok: false, message: detail + " · Maximum permitted distance is 15 m." };
+        }
+        return { ok: true, message: detail };
+    }
+
+    input.addEventListener("change", async function () {
+        const thisRun = ++validationRun;
+        const files = Array.from(input.files || []);
+        results.replaceChildren();
+        validationPassed = true;
+
+        if (files.length === 0) {
+            submitButton.disabled = false;
+            working.hidden = true;
+            showSummary("secondary", "No photographs selected. You may submit progress without photographs, or select geo-tagged originals for validation.");
+            return;
+        }
+        if (files.length > 10) {
+            validationPassed = false;
+            submitButton.disabled = true;
+            showSummary("danger", "You selected " + files.length + " photographs. A maximum of 10 is allowed per update.");
+            return;
+        }
+
+        submitButton.disabled = true;
+        working.hidden = false;
+        showSummary("info", "Checking GPS metadata and distance for " + files.length + " photograph(s)…");
+
+        const checked = await Promise.all(files.map(validateFile));
+        if (thisRun !== validationRun) return;
+
+        checked.forEach((result, index) => {
+            addResult(files[index].name, result.ok ? "success" : "danger", result.message);
+        });
+        validationPassed = checked.every(result => result.ok);
+        working.hidden = true;
+        submitButton.disabled = !validationPassed;
+
+        if (validationPassed) {
+            showSummary("success", "All " + files.length + " selected photograph(s) contain readable GPS coordinates and are within 15 metres of this house. Server-side validation will run again when you submit.");
+        } else {
+            const failed = checked.filter(result => !result.ok).length;
+            showSummary("danger", failed + " of " + files.length + " photograph(s) failed validation. Remove the failed file(s) or select corrected original photographs before submitting.");
+        }
+    });
+
+    const form = input.closest("form");
+    if (form) {
+        form.addEventListener("submit", function (event) {
+            if (!validationPassed) {
+                event.preventDefault();
+                showSummary("danger", "Submission blocked: resolve the photograph validation errors first.");
+            }
+        });
+    }
+})();
+</script>
+
+</body></html>

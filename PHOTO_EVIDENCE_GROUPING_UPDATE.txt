@@ -1,0 +1,40 @@
+HRMIS PHOTO EVIDENCE GROUPING UPDATE
+
+Purpose
+Photographic evidence on a house's reconstruction progress page is now grouped
+under the exact ProgressRecord submission to which each image is linked.
+
+Each submission group displays:
+- Milestone and claimed completion percentage
+- Submission date/time and engineer
+- Supervisor review status
+- Reviewer and review timestamp, where available
+- Supervisor comments, where available
+- Original image thumbnail and full-size image link
+- Photo GPS coordinates and distance from the registered house
+- GPS validation status, EXIF capture time, upload time and checksum
+- Link to the supervisor review page for superusers
+
+Legacy handling
+Photos whose progress_record field is null are shown in a separate
+"Legacy photographs not linked to a progress submission" section. They are
+not incorrectly attributed to an approval or changes-requested decision.
+
+Installation
+1. Back up the HRMIS project and database.
+2. Extract this ZIP into the parent folder containing the HRMIS project,
+   allowing the HRMIS folder to merge with the existing project.
+3. Preserve your .env file, database and media directory.
+4. From the folder containing manage.py, run:
+      python manage.py check
+      python manage.py runserver
+
+No database migration is required.
+
+Verification
+- Open a house progress page as a superuser.
+- Confirm each submission has its own evidence group.
+- Confirm an approved submission's photos appear only under Approved.
+- Confirm a changes-requested submission's photos appear only under Changes requested.
+- Confirm legacy unlinked photos appear in their separate section.
+- Open the review link for a submission and confirm it opens the matching record.
