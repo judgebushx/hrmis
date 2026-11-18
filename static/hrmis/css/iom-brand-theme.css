@@ -1,0 +1,138 @@
+
+/* HRMIS IOM brand theme */
+:root {
+  --hrmis-blue: #0033A0;
+  --hrmis-blue-dark: #002677;
+  --hrmis-blue-deep: #001f66;
+  --hrmis-blue-soft: #eaf0ff;
+  --hrmis-progress-blue: #0866ff;
+  --hrmis-line: #d8e2f5;
+  --hrmis-page: #f4f6fb;
+  --bs-primary: #0033A0;
+  --bs-primary-rgb: 0, 51, 160;
+  --bs-link-color: #0033A0;
+  --bs-link-hover-color: #002677;
+}
+html, body { background: var(--hrmis-page) !important; }
+body { color: #10244d; }
+a { color: var(--hrmis-blue); }
+a:hover { color: var(--hrmis-blue-dark); }
+.navbar, nav.navbar, .navbar.bg-primary, nav.bg-primary {
+  background: var(--hrmis-blue) !important;
+  border-bottom: 1px solid rgba(255,255,255,.15);
+  box-shadow: 0 2px 8px rgba(0,31,102,.12);
+}
+.navbar-brand {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 12px;
+  padding-top: .35rem !important;
+  padding-bottom: .35rem !important;
+  color: #fff !important;
+}
+.navbar-brand img.iom-navbar-logo {
+  display: block;
+  width: auto;
+  height: 43px;
+  max-width: min(180px, 42vw);
+  object-fit: contain;
+  background: transparent;
+}
+.navbar-brand .brand-caption {
+  display: inline-block;
+  color: rgba(255,255,255,.92);
+  font-size: .9rem;
+  font-weight: 500;
+  letter-spacing: .01em;
+}
+.btn, button, input[type="submit"], input[type="button"] {
+  transition: background-color .16s ease, border-color .16s ease, box-shadow .16s ease, color .16s ease, transform .16s ease;
+}
+.btn-primary, .btn-outline-primary, .btn-outline-success, .btn-outline-info,
+.btn-outline-secondary, .btn-success, .btn-info, .btn-secondary {
+  color: var(--hrmis-blue) !important;
+  background: #fff !important;
+  border-color: var(--hrmis-blue) !important;
+}
+.btn-primary:hover, .btn-outline-primary:hover, .btn-outline-success:hover,
+.btn-outline-info:hover, .btn-outline-secondary:hover, .btn-success:hover,
+.btn-info:hover, .btn-secondary:hover, .btn:hover {
+  color: #fff !important;
+  background: var(--hrmis-blue-dark) !important;
+  border-color: var(--hrmis-blue-dark) !important;
+  box-shadow: 0 3px 9px rgba(0,51,160,.18);
+  transform: translateY(-1px);
+}
+/* Main navigation links on the Housing Registry remain solid IOM blue. */
+.registry-navigation .btn,
+.registry-navigation .btn-primary {
+  color: #fff !important;
+  background: var(--hrmis-blue) !important;
+  border-color: var(--hrmis-blue) !important;
+}
+.registry-navigation .btn:hover,
+.registry-navigation .btn-primary:hover {
+  color: #fff !important;
+  background: var(--hrmis-blue-dark) !important;
+  border-color: var(--hrmis-blue-dark) !important;
+}
+.btn-light, .btn-outline-light {
+  color: var(--hrmis-blue) !important;
+  background: #fff !important;
+  border-color: rgba(255,255,255,.8) !important;
+}
+.btn-light:hover, .btn-outline-light:hover {
+  color: var(--hrmis-blue-dark) !important;
+  background: var(--hrmis-blue-soft) !important;
+}
+.card, .panel, .modal-content, .dropdown-menu {
+  border-color: var(--hrmis-line) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 2px 7px rgba(15,39,88,.06);
+}
+.card-header, .table thead th, thead.table-light th {
+  color: var(--hrmis-blue) !important;
+  background: #eaf0fa !important;
+  border-color: var(--hrmis-line) !important;
+}
+.form-control:focus, .form-select:focus {
+  border-color: #6d91e0 !important;
+  box-shadow: 0 0 0 .2rem rgba(0,51,160,.14) !important;
+}
+.badge.text-bg-primary, .bg-primary { background-color: var(--hrmis-blue) !important; }
+.progress-bar { background-color: var(--hrmis-progress-blue) !important; }
+.pagination .page-link { color: var(--hrmis-blue); }
+.pagination .active .page-link { background: var(--hrmis-blue); border-color: var(--hrmis-blue); }
+@media (max-width: 576px) {
+  .navbar-brand img.iom-navbar-logo { height: 36px; }
+  .navbar-brand .brand-caption { font-size: .78rem; }
+}
+
+/* Housing Registry navigation/action hierarchy */
+.registry-toolbar { width: 100%; }
+.registry-navigation { flex: 1 1 auto; }
+.registry-navigation .btn { white-space: nowrap; }
+.register-house-action { white-space: nowrap; }
+@media (max-width: 768px) {
+  .registry-navigation { width: 100%; }
+  .register-house-action { margin-top: .15rem; }
+}
+
+/* Standard HRMIS progress blue across all progress meters and schedule bars */
+:root { --hrmis-progress-blue: #0866ff; }
+.progress-bar,
+.progress-fill,
+.progress-meter__fill,
+.meter-fill,
+.progress__fill,
+.progress-indicator,
+.progress-current {
+  background-color: var(--hrmis-progress-blue) !important;
+}
+/* Baseline schedule duration bars in the House-level reconstruction schedule register */
+.schedule-register .bg-primary,
+.house-schedule-register .bg-primary,
+.table .schedule-window-fill,
+.table .baseline-window-fill {
+  background-color: var(--hrmis-progress-blue) !important;
+}

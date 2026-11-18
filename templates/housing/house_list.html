@@ -2,15 +2,28 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Housing Register | HRMIS</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>body{background:#f5f7fb}.stat{border:0;border-radius:14px}.map{height:360px;border-radius:12px}.table thead th{white-space:nowrap}</style></head>
-<body><nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand fw-semibold" href="{% url 'housing:house-list' %}">HRMIS <span class="fw-normal">| Housing Reconstruction</span></a><div class="d-flex align-items-center gap-3 text-white"><span class="small">{{ request.user.get_full_name|default:request.user.username }}</span><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-light">Sign out</button></form></div></div></nav>
+<style>
+body{background:#f5f7fb}.stat{border:0;border-radius:14px}
+.map{height:360px;border-radius:12px;z-index:1}
+#house-map-shell{position:relative}
+#house-map-shell.is-maximized{position:fixed;inset:12px;z-index:2000;background:#fff;padding:12px;border-radius:16px;box-shadow:0 12px 48px rgba(0,0,0,.28);display:flex;flex-direction:column}
+#house-map-shell.is-maximized #house-map{height:auto;min-height:0;flex:1}
+body.map-is-maximized{overflow:hidden}
+.map-toggle{border:1px solid #0033a0;background:#fff;color:#0033a0;border-radius:8px;padding:6px 11px;font-size:.875rem;transition:background-color .16s ease,color .16s ease,box-shadow .16s ease}
+.map-toggle:hover{background:#0033a0;color:#fff;box-shadow:0 2px 7px rgba(0,51,160,.18)}
+.numbered-house-marker{background:transparent;border:0}
+.numbered-house-marker__circle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--marker-colour,#0033a0);border:2px solid #fff;color:#fff;font-size:12px;font-weight:700;line-height:1;box-shadow:0 2px 6px rgba(11,31,77,.35)}
+.table thead th{white-space:nowrap}
+</style><link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
+</head>
+<body><nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand fw-semibold" href="{% url 'housing:house-list' %}"><img class="iom-navbar-logo" src="/static/hrmis/images/iom-logo-hd.jpg" alt="IOM – UN Migration"><span class="brand-caption">Housing Reconstruction Monitoring</span></a><div class="d-flex align-items-center gap-3 text-white"><span class="small">{{ request.user.get_full_name|default:request.user.username }}</span><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-light">Sign out</button></form></div></div></nav>
 <main class="container py-4">
 {% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">{{ message }}<button class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><h2 class="mb-1">Housing registry</h2><p class="text-secondary mb-0">House-level reconstruction records and engineer assignments</p></div>
-{% if request.user.is_superuser %}<div class="d-flex flex-wrap gap-2"><a class="btn btn-light text-primary" href="{% url 'dashboard:programme-dashboard' %}">Programme dashboard</a><a class="btn btn-outline-dark" href="{% url 'reports:centre' %}">Reports &amp; analytics</a><a class="btn btn-outline-primary" href="{% url 'progress:progress-review-list' %}">Progress reviews</a><a class="btn btn-outline-success" href="{% url 'accounts:inspector-list' %}">Inspector management</a><a class="btn btn-outline-info" href="{% url 'inspections:inspection-list' %}">Inspections &amp; QA</a><a class="btn btn-outline-secondary" href="{% url 'accounts:engineer-list' %}">Manage engineers</a><a class="btn btn-outline-primary" href="{% url 'housing:house-import-template' %}">Download Excel template</a><a class="btn btn-outline-primary" href="{% url 'housing:house-import' %}">Import houses</a><a class="btn btn-primary" href="{% url 'housing:house-create' %}">+ Register house</a></div>{% endif %}</div>
+{% if request.user.is_superuser %}<div class="d-flex flex-wrap align-items-center gap-2 registry-toolbar"><nav class="d-flex flex-wrap gap-2 registry-navigation" aria-label="Housing management navigation"><a class="btn btn-primary" href="{% url 'dashboard:programme-dashboard' %}">Programme dashboard</a><a class="btn btn-primary" href="{% url 'progress:progress-review-list' %}">Progress reviews</a><a class="btn btn-primary" href="{% url 'accounts:inspector-list' %}">Inspector management</a><a class="btn btn-primary" href="{% url 'inspections:inspection-list' %}">Inspections &amp; QA</a><a class="btn btn-primary" href="{% url 'scheduling:programme-schedule' %}">Planning &amp; scheduling</a><a class="btn btn-primary" href="{% url 'accounts:engineer-list' %}">Manage engineers</a><a class="btn btn-primary" href="{% url 'housing:house-import-template' %}">Download Excel template</a><a class="btn btn-primary" href="{% url 'housing:house-import' %}">Import houses</a></nav><a class="btn btn-outline-primary register-house-action" href="{% url 'housing:house-create' %}">+ Register house</a></div>{% endif %}</div>
 <div class="row g-3 mb-4"><div class="col-md-4"><div class="card stat shadow-sm"><div class="card-body"><div class="text-secondary small">Houses visible to you</div><div class="display-6 fw-semibold">{{ total_houses }}</div></div></div></div><div class="col-md-4"><div class="card stat shadow-sm"><div class="card-body"><div class="text-secondary small">Assigned</div><div class="display-6 fw-semibold">{{ assigned_count }}</div></div></div></div><div class="col-md-4"><div class="card stat shadow-sm"><div class="card-body"><div class="text-secondary small">Unassigned</div><div class="display-6 fw-semibold">{{ unassigned_count }}</div></div></div></div></div>
-<div class="card border-0 shadow-sm mb-4"><div class="card-body"><form method="get" class="row g-2 align-items-end"><div class="col-md-5"><label class="form-label">Search</label><input class="form-control" name="q" value="{{ search }}" placeholder="House ID or beneficiary"></div>{% if request.user.is_superuser %}<div class="col-md-3"><label class="form-label">Island</label><select class="form-select" name="island"><option value="">All islands</option>{% for item in islands %}<option value="{{ item.pk }}" {% if selected_island == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>{% endif %}<div class="col-md-2"><label class="form-label">Status</label><select class="form-select" name="status"><option value="">All statuses</option>{% for value,label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div class="col-md-2 d-flex gap-2"><button class="btn btn-primary flex-grow-1">Filter</button><a class="btn btn-outline-secondary" href="{% url 'housing:house-list' %}">Reset</a></div></form></div></div>
-<div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white fw-semibold">House locations on map <span class="text-secondary fw-normal small">(current page)</span></div><div class="card-body"><div id="house-map" class="map"></div>{% if not houses %}<p class="text-secondary small mt-2 mb-0">No houses to display yet.</p>{% endif %}</div></div>
+<div class="card border-0 shadow-sm mb-4"><div class="card-body"><form method="get" class="row g-2 align-items-end"><div class="col-md-5"><label class="form-label">Search</label><input class="form-control" name="q" value="{{ search }}" placeholder="House ID or beneficiary"></div>{% if request.user.is_superuser %}<div class="col-md-3"><label class="form-label">Island</label><select class="form-select" name="island"><option value="">All islands</option>{% for item in islands %}<option value="{{ item.pk }}" {% if selected_island == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>{% endif %}<div class="col-md-2"><label class="form-label">Status</label><select class="form-select" name="status"><option value="">All statuses</option>{% for value,label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div class="col-md-2 d-flex gap-2"><button class="btn btn-primary flex-grow-1">Filter</button><a class="btn btn-primary" href="{% url 'housing:house-list' %}">Reset</a></div></form></div></div>
+<div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center"><div>House locations on map <span class="text-secondary fw-normal small">(current page)</span></div><button type="button" id="map-maximize-toggle" class="map-toggle" aria-pressed="false" aria-label="Maximize map">⛶ Expand map</button></div><div class="card-body" id="house-map-shell"><div id="house-map" class="map"></div>{% if not houses %}<p class="text-secondary small mt-2 mb-0">No houses to display yet.</p>{% endif %}</div></div>
 <div class="card border-0 shadow-sm"><div class="card-header bg-white fw-semibold">Registered houses</div><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>House ID</th><th>Beneficiary</th><th>Location</th><th>Engineer</th><th>Status</th><th></th></tr></thead><tbody>{% for house in houses %}<tr><td class="fw-semibold"><a href="{% url 'housing:house-detail' house.pk %}">{{ house.house_id }}</a></td><td>{{ house.beneficiary_name|default:'—' }}</td><td>{{ house.village.name }}, {{ house.village.municipality.island.name }}</td><td>{{ house.assigned_engineer|default:'Unassigned' }}</td><td><span class="badge text-bg-light">{{ house.get_status_display }}</span></td><td class="text-end">{% if request.user.is_superuser %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'housing:house-update' house.pk %}">Edit</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="6" class="text-center text-secondary py-4">No houses found. {% if request.user.is_superuser %}Register a house or import the housing register.{% else %}No houses are currently assigned to your account.{% endif %}</td></tr>{% endfor %}</tbody></table></div>
 {% if page_obj.has_other_pages %}<div class="card-footer bg-white d-flex justify-content-between align-items-center"><span class="small text-secondary">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span><div class="btn-group">{% if page_obj.has_previous %}<a class="btn btn-sm btn-outline-secondary" href="?q={{ search|urlencode }}&island={{ selected_island }}&status={{ selected_status }}&page={{ page_obj.previous_page_number }}">Previous</a>{% else %}<span class="btn btn-sm btn-outline-secondary disabled">Previous</span>{% endif %}{% if page_obj.has_next %}<a class="btn btn-sm btn-outline-secondary" href="?q={{ search|urlencode }}&island={{ selected_island }}&status={{ selected_status }}&page={{ page_obj.next_page_number }}">Next</a>{% else %}<span class="btn btn-sm btn-outline-secondary disabled">Next</span>{% endif %}</div></div>{% endif %}</div>
 </main><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>{{ map_points|json_script:"house-points" }}<script>
@@ -54,7 +67,28 @@ points.forEach(function(p) {
         return;
     }
 
-    const marker = L.marker([lat, lon]).addTo(map);
+    // Numbered circular markers; colour communicates the house's current status.
+    const statusText = String(p.status || '').toLowerCase();
+    let markerColour = '#0033a0'; // Registered / default
+    if (statusText.includes('completed') || statusText.includes('handed over')) {
+        markerColour = '#16834a';
+    } else if (statusText.includes('under reconstruction') || statusText.includes('in progress')) {
+        markerColour = '#d18a00';
+    } else if (statusText.includes('hold') || statusText.includes('suspend')) {
+        markerColour = '#c43d3d';
+    }
+    const markerNumber = bounds.length + 1;
+    const numberedIcon = L.divIcon({
+        className: 'numbered-house-marker',
+        html: `<span class="numbered-house-marker__circle" style="--marker-colour:${markerColour}" aria-label="House ${markerNumber}">${markerNumber}</span>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+        popupAnchor: [0, -18]
+    });
+    const marker = L.marker([lat, lon], {
+        icon: numberedIcon,
+        title: String(p.id || `House ${markerNumber}`)
+    }).addTo(map);
 
     // Construct popup safely
     const popup = document.createElement('div');
@@ -90,5 +124,34 @@ if (bounds.length > 0) {
 setTimeout(function() {
     map.invalidateSize();
 }, 250);
+
+// Expand the map for easier inspection, then restore its original layout.
+const mapShell = document.getElementById('house-map-shell');
+const mapToggle = document.getElementById('map-maximize-toggle');
+
+function setMapMaximized(maximized) {
+    mapShell.classList.toggle('is-maximized', maximized);
+    document.body.classList.toggle('map-is-maximized', maximized);
+    mapToggle.setAttribute('aria-pressed', String(maximized));
+    mapToggle.setAttribute('aria-label', maximized ? 'Restore map size' : 'Maximize map');
+    mapToggle.textContent = maximized ? '✕ Close expanded map' : '⛶ Expand map';
+    // Leaflet must recalculate its dimensions after the container changes.
+    window.setTimeout(function() {
+        map.invalidateSize({pan: false});
+        if (bounds.length > 1) {
+            map.fitBounds(bounds, {padding: [30, 30], maxZoom: 14});
+        }
+    }, 180);
+}
+
+mapToggle.addEventListener('click', function() {
+    setMapMaximized(!mapShell.classList.contains('is-maximized'));
+});
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape' && mapShell.classList.contains('is-maximized')) {
+        setMapMaximized(false);
+    }
+});
 
 </script><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script></body></html>

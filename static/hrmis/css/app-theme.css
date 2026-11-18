@@ -1,0 +1,52 @@
+
+/* HRMIS shared visual system — based on the supplied Housing Registry design */
+:root{
+  --hrmis-ink:#0b1f4d;--hrmis-muted:#5b6b8c;--hrmis-blue:#0033a0;
+  --hrmis-blue-dark:#00277d;--hrmis-mist:#eaf0fa;--hrmis-line:#dde5f3;
+  --hrmis-page:#f4f6fb;--hrmis-signal:#f2a900;
+  --bs-body-font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --bs-body-color:var(--hrmis-ink);--bs-primary:var(--hrmis-blue);
+  --bs-primary-rgb:0,51,160;--bs-link-color:var(--hrmis-blue);
+  --bs-link-hover-color:var(--hrmis-blue-dark);
+}
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+html{scroll-behavior:smooth}
+body{background:var(--hrmis-page)!important;color:var(--hrmis-ink)!important;font-family:var(--bs-body-font-family)!important}
+a{color:var(--hrmis-blue)}
+.navbar{background:#fff!important;border-bottom:1px solid var(--hrmis-line);box-shadow:0 1px 2px rgba(11,31,77,.035)}
+.navbar .navbar-brand{color:var(--hrmis-ink)!important;font-weight:600;letter-spacing:-.01em}
+.navbar .nav-link{color:var(--hrmis-ink)!important;font-weight:500;border-radius:.5rem}
+.navbar .nav-link:hover{background:var(--hrmis-mist);color:var(--hrmis-blue)!important}
+.navbar .text-white{color:var(--hrmis-ink)!important}
+.navbar .btn-outline-light{color:var(--hrmis-blue)!important;border-color:#b9c7e6!important}
+.navbar .btn-outline-light:hover{background:var(--hrmis-blue)!important;color:#fff!important}
+main.container,main.container-fluid{padding-top:1.5rem!important;padding-bottom:2.5rem!important}
+h1,h2,h3,h4,h5,.h1,.h2,.h3,.h4,.h5{color:var(--hrmis-ink);letter-spacing:-.015em}
+h1,.h1{font-size:1.65rem;font-weight:600}
+h2,.h2{font-size:1.35rem;font-weight:600}
+h3,.h3{font-size:1.12rem;font-weight:600}
+.text-secondary,.text-muted,.small.text-secondary{color:var(--hrmis-muted)!important}
+.card,.panel,.modal-content,.list-group{border:1px solid var(--hrmis-line)!important;border-radius:1rem!important;box-shadow:0 1px 3px rgba(11,31,77,.045)}
+.card{overflow:hidden}
+.card-header,.card-footer{background:#fff!important;border-color:var(--hrmis-line)!important}
+.card-body{padding:1.15rem}
+.btn{border-radius:.55rem!important;font-weight:500}
+.btn-primary{--bs-btn-bg:var(--hrmis-blue);--bs-btn-border-color:var(--hrmis-blue);--bs-btn-hover-bg:var(--hrmis-blue-dark);--bs-btn-hover-border-color:var(--hrmis-blue-dark);--bs-btn-active-bg:var(--hrmis-blue-dark)}
+.btn-outline-primary{--bs-btn-color:var(--hrmis-blue);--bs-btn-border-color:#b9c7e6;--bs-btn-hover-bg:var(--hrmis-blue);--bs-btn-hover-border-color:var(--hrmis-blue)}
+.btn-outline-secondary{--bs-btn-color:var(--hrmis-muted);--bs-btn-border-color:var(--hrmis-line);--bs-btn-hover-bg:var(--hrmis-mist);--bs-btn-hover-color:var(--hrmis-ink);--bs-btn-hover-border-color:var(--hrmis-line)}
+.form-label{font-size:.84rem;font-weight:500;color:var(--hrmis-muted)}
+.form-control,.form-select,.input-group-text{border-color:var(--hrmis-line)!important;border-radius:.55rem!important}
+.form-control:focus,.form-select:focus{border-color:var(--hrmis-blue)!important;box-shadow:0 0 0 .2rem rgba(0,51,160,.15)!important}
+.table{--bs-table-bg:transparent;margin-bottom:0}
+.table thead th{background:var(--hrmis-mist);color:var(--hrmis-muted);font-size:.76rem;font-weight:600;text-transform:uppercase;letter-spacing:.045em;border-bottom:1px solid var(--hrmis-line);white-space:nowrap}
+.table td,.table th{border-color:var(--hrmis-line);vertical-align:middle}
+.table-hover>tbody>tr:hover>*{--bs-table-hover-bg:#f6f8fd}
+.badge{font-weight:500;letter-spacing:.01em}
+.alert{border:1px solid transparent;border-radius:.75rem}
+.dropdown-menu{border-color:var(--hrmis-line);border-radius:.75rem;box-shadow:0 8px 24px rgba(11,31,77,.1);padding:.4rem}
+.dropdown-item{border-radius:.45rem}
+.dropdown-item:hover{background:var(--hrmis-mist);color:var(--hrmis-blue)}
+.pagination .page-link{color:var(--hrmis-blue);border-color:var(--hrmis-line)}
+.pagination .active>.page-link{background:var(--hrmis-blue);border-color:var(--hrmis-blue)}
+hr{border-color:var(--hrmis-line);opacity:1}
+@media(max-width:767px){main.container-fluid{padding-left:1rem!important;padding-right:1rem!important}.table-responsive{border-radius:.65rem}}

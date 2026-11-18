@@ -16,7 +16,7 @@ INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "apps.accounts", "apps.locations", "apps.housing", "apps.progress",
-    "apps.photographs", "apps.audit", "apps.dashboard", "apps.scheduling", "apps.inspections", "apps.reports",
+    "apps.photographs", "apps.audit", "apps.dashboard", "apps.scheduling", "apps.inspections",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

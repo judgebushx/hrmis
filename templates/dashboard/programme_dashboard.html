@@ -28,11 +28,12 @@ body{background:#f4f6fa;color:#17212f}
 .legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
 @media(max-width:768px){.map-panel{height:340px}.chart-panel{height:260px}.kpi-value{font-size:1.65rem}}
 </style>
+<link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
 </head>
 <body>
 <nav class="navbar navbar-dark">
   <div class="container-fluid dashboard-wrap">
-    <a class="navbar-brand fw-semibold" href="{% url 'housing:house-list' %}">HRMIS <span class="fw-normal">| Housing Reconstruction</span></a>
+    <a class="navbar-brand fw-semibold" href="{% url 'housing:house-list' %}"><img class="iom-navbar-logo" src="/static/hrmis/images/iom-logo.png" alt="IOM – UN Migration"><span class="brand-caption">Housing Reconstruction Monitoring</span></a>
     <div class="d-flex align-items-center gap-3 text-white">
       <span class="small">{{ request.user.get_full_name|default:request.user.username }}</span>
       <a class="btn btn-sm btn-outline-light" href="{% url 'scheduling:programme-schedule' %}">Planning &amp; Scheduling</a>

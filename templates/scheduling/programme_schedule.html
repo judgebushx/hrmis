@@ -3,6 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Programme Planning | HRMIS</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
 <style>
 body{background:#f4f6fa;color:#17212f}.wrap{max-width:1550px}.card{border:0;border-radius:12px;box-shadow:0 2px 8px rgba(15,35,65,.06)}
 .kpi{font-size:1.8rem;font-weight:700}.muted{font-size:.8rem;color:#718096}.table td,.table th{vertical-align:middle;font-size:.88rem}
@@ -67,7 +68,7 @@ body{background:#f4f6fa;color:#17212f}.wrap{max-width:1550px}.card{border:0;bord
 <div class="card">
 <div class="card-header bg-white d-flex justify-content-between align-items-center"><strong>House-level reconstruction schedule register</strong><span class="muted">{{ rows|length }} houses</span></div>
 <div class="px-3 pt-2 muted">Blue bars show where each house’s baseline construction period sits within the programme calendar. Bar length represents scheduled duration, not work completed. Use Planned progress and Actual verified for progress comparisons.</div>
-<div class="table-responsive"><table class="table table-hover mb-0">
+<div class="table-responsive"><table class="table table-hover mb-0 schedule-register">
 <thead class="table-light"><tr><th>House ID</th><th>Location</th><th>Engineer</th><th>Baseline start</th><th>Baseline completion</th><th>Baseline schedule window</th><th>Planned progress</th><th>Actual verified</th><th>Variance</th><th>Schedule status</th><th></th></tr></thead>
 <tbody>{% for row in rows %}
 <tr>
@@ -75,7 +76,7 @@ body{background:#f4f6fa;color:#17212f}.wrap{max-width:1550px}.card{border:0;bord
 <td>{{ row.location }}</td><td>{{ row.engineer }}</td>
 <td>{% if row.schedule and row.schedule.baseline_start %}{{ row.schedule.baseline_start|date:"d M Y" }}{% else %}—{% endif %}</td>
 <td>{% if row.schedule and row.schedule.baseline_completion %}{{ row.schedule.baseline_completion|date:"d M Y" }}{% else %}—{% endif %}</td>
-<td style="min-width:170px"><div class="position-relative bg-light rounded" style="height:12px" title="{% if row.schedule and row.schedule.effective_start and row.schedule.effective_completion %}Scheduled construction window: {{ row.schedule.effective_start|date:'d M Y' }} to {{ row.schedule.effective_completion|date:'d M Y' }}{% else %}No complete baseline schedule{% endif %}" aria-label="Baseline schedule window, not percentage complete"><div class="position-absolute bg-primary rounded" style="left:{{ row.timeline_left }}%;width:{{ row.timeline_width }}%;height:12px"></div></div><div class="muted mt-1">{% if row.schedule and row.schedule.effective_start and row.schedule.effective_completion %}{{ row.schedule.effective_start|date:"d M Y" }} – {{ row.schedule.effective_completion|date:"d M Y" }}{% else %}Not scheduled{% endif %}</div></td>
+<td style="min-width:170px"><div class="position-relative bg-light rounded" style="height:12px" title="{% if row.schedule and row.schedule.effective_start and row.schedule.effective_completion %}Scheduled construction window: {{ row.schedule.effective_start|date:'d M Y' }} to {{ row.schedule.effective_completion|date:'d M Y' }}{% else %}No complete baseline schedule{% endif %}" aria-label="Baseline schedule window, not percentage complete"><div class="position-absolute bg-primary rounded schedule-window-fill" style="left:{{ row.timeline_left }}%;width:{{ row.timeline_width }}%;height:12px"></div></div><div class="muted mt-1">{% if row.schedule and row.schedule.effective_start and row.schedule.effective_completion %}{{ row.schedule.effective_start|date:"d M Y" }} – {{ row.schedule.effective_completion|date:"d M Y" }}{% else %}Not scheduled{% endif %}</div></td>
 <td>{{ row.metrics.planned }}%</td><td>{{ row.metrics.actual }}%</td>
 <td class="{% if row.metrics.variance < 0 %}text-danger{% elif row.metrics.variance > 0 %}text-success{% endif %}">{{ row.metrics.variance }} pp</td>
 <td>
