@@ -1,30 +1,227 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>House Schedule | HRMIS</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>body{background:#f4f6fa;color:#17212f}.wrap{max-width:1450px}.card{border:0;border-radius:12px;box-shadow:0 2px 8px rgba(15,35,65,.06)}.muted{font-size:.8rem;color:#718096}.table td,.table th{vertical-align:middle}</style><link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
+<title>House Schedule | HRMIS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+/* The navigation bar is untouched. Everything below is scoped to <main>. */
+body { background: #f4f6fb; }
+.wrap { max-width: 1450px; }
+
+main {
+  --ink: #0b1f4d;
+  --muted: #5b6b8c;
+  --iom-blue: #0033a0;
+  --iom-blue-dark: #00277d;
+  --mist: #eaf0fa;
+  --line: #dde5f3;
+  --danger: #c43d3d;
+
+  --bs-body-font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bs-body-color: var(--ink);
+  --bs-link-color: var(--iom-blue);
+  --bs-link-hover-color: var(--iom-blue-dark);
+  --bs-secondary-color: var(--muted);
+  font-family: var(--bs-body-font-family);
+  color: var(--ink);
+}
+
+/* Buttons */
+main .btn { border-radius: .55rem; font-weight: 500; padding: .55rem 1.1rem; }
+main .btn-primary {
+  --bs-btn-bg: var(--iom-blue); --bs-btn-border-color: var(--iom-blue);
+  --bs-btn-hover-bg: var(--iom-blue-dark); --bs-btn-hover-border-color: var(--iom-blue-dark);
+  --bs-btn-active-bg: var(--iom-blue-dark); --bs-btn-active-border-color: var(--iom-blue-dark);
+  --bs-btn-focus-shadow-rgb: 0, 51, 160;
+}
+main .btn-outline-secondary {
+  --bs-btn-color: var(--muted); --bs-btn-border-color: var(--line);
+  --bs-btn-hover-bg: var(--mist); --bs-btn-hover-color: var(--ink); --bs-btn-hover-border-color: var(--line);
+}
+
+/* Header */
+.eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--iom-blue); }
+.page-title { font-size: 1.65rem; font-weight: 600; letter-spacing: -.01em; }
+.muted { font-size: .8rem; color: var(--muted); }
+
+/* Panels */
+.panel { background: #fff; border: 1px solid var(--line); border-radius: 1rem; box-shadow: 0 1px 2px rgba(11, 31, 77, .04); overflow: hidden; }
+.panel-pad { padding: 1.25rem 1.4rem; }
+.panel-head { padding: 1rem 1.4rem; border-bottom: 1px solid var(--line); }
+.panel-title { font-size: 1.05rem; font-weight: 600; margin: 0; }
+.panel-foot { padding: .9rem 1.4rem; border-top: 1px solid var(--line); background: #fafbfe; display: flex; flex-wrap: wrap; gap: .6rem; }
+
+/* Key dates strip */
+.dates-strip { display: grid; grid-template-columns: repeat(3, 1fr); }
+.dates-strip .date-item { padding: 1.05rem 1.4rem; }
+.dates-strip .date-item + .date-item { border-left: 1px solid var(--line); }
+.dates-strip .date-label { font-size: .74rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.dates-strip .date-value { font-size: 1.25rem; font-weight: 600; letter-spacing: -.01em; margin-top: .15rem; }
+.dates-strip .date-item.is-key .date-value { color: var(--iom-blue); }
+.dates-footnote { border-top: 1px solid var(--line); padding: .7rem 1.4rem; font-size: .82rem; color: var(--muted); background: #fafbfe; }
+@media (max-width: 767.98px) {
+  .dates-strip { grid-template-columns: 1fr; }
+  .dates-strip .date-item + .date-item { border-left: 0; border-top: 1px solid var(--line); }
+}
+
+/* Date groups in the baseline panel */
+.date-group { border: 1px solid var(--line); border-radius: .85rem; padding: 1rem 1.1rem 1.15rem; height: 100%; }
+.date-group.is-revised { background: #fafbfe; border-style: dashed; }
+.date-group-title { font-size: .76rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--iom-blue); margin-bottom: .75rem; }
+.date-group.is-revised .date-group-title { color: var(--muted); }
+
+/* Forms (styled from the container, so they look right whatever widget classes the form adds) */
+.form-label { font-size: .82rem; font-weight: 500; color: var(--muted); margin-bottom: .3rem; }
+.plan-form input:not([type=hidden]):not([type=checkbox]):not([type=radio]),
+.plan-form select,
+.plan-form textarea {
+  display: block; width: 100%; border: 1px solid var(--line); border-radius: .55rem;
+  padding: .55rem .8rem; font: inherit; color: var(--ink); background-color: #fff;
+}
+.plan-form textarea { min-height: 5.5rem; resize: vertical; }
+.plan-form input:focus, .plan-form select:focus, .plan-form textarea:focus {
+  outline: 0; border-color: var(--iom-blue); box-shadow: 0 0 0 .2rem rgba(0, 51, 160, .18);
+}
+.plan-form .errorlist { list-style: none; padding: 0; margin: .3rem 0 0; color: var(--danger); font-size: .8rem; }
+
+/* Milestone table */
+.milestone-table { --bs-table-bg: transparent; width: 100%; min-width: 960px; margin: 0; }
+.milestone-table th, .milestone-table td { text-align: left; vertical-align: middle; padding: .75rem .6rem; border-color: var(--line); }
+.milestone-table th:first-child, .milestone-table td:first-child { padding-left: 1.4rem; }
+.milestone-table th:last-child, .milestone-table td:last-child { padding-right: 1.4rem; }
+.milestone-table thead th {
+  background: var(--mist); color: var(--muted); font-size: .74rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; border-bottom: 1px solid var(--line);
+}
+.milestone-table .col-milestone { min-width: 200px; }
+.milestone-table .col-date { width: 15%; min-width: 140px; }
+.milestone-table .col-notes { min-width: 200px; }
+.milestone-table th.is-revised, .milestone-table td.is-revised { background: #fafbfe; }
+.milestone-table tbody tr:hover > td { background: #f6f8fd; }
+.milestone-table tbody tr:hover > td.is-revised { background: #f1f4fb; }
+
+.step { display: flex; align-items: center; gap: .7rem; }
+.step-num {
+  flex: none; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--mist); color: var(--iom-blue);
+  display: inline-flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 600;
+}
+.step-name { font-weight: 600; }
+.row-error { color: var(--danger); font-size: .8rem; margin-top: .25rem; }
+
+main .alert { border-radius: .75rem; border: 0; }
+</style><link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
 </head>
-<body><nav class="navbar navbar-dark bg-primary"><div class="container-fluid wrap"><a class="navbar-brand" href="{% url 'scheduling:programme-schedule' %}"><img class="iom-navbar-logo" src="/static/hrmis/images/iom-logo.png" alt="IOM – UN Migration"><span class="brand-caption">Housing Reconstruction Monitoring</span></a><a class="btn btn-sm btn-outline-light" href="{% url 'scheduling:programme-schedule' %}">Back to programme schedule</a></div></nav>
-<main class="container-fluid wrap py-4">
-<div class="mb-3"><div class="small text-primary fw-semibold text-uppercase">House-level baseline and milestone dates</div><h2 class="mb-1">{{ house.house_id }} – Construction schedule</h2><p class="text-secondary mb-0">{{ house.beneficiary_name }} · {{ house.village.name }}, {{ house.village.municipality.name }}, {{ house.village.municipality.island.name }}</p></div>
-<div class="alert alert-info">Programme commencement: <strong>{{ plan.project_start|date:"d M Y" }}</strong> · Construction deadline: <strong>{{ plan.construction_deadline|date:"d M Y" }}</strong> · Overall project end: <strong>{{ plan.project_end|date:"d M Y" }}</strong>. Baseline construction completion must be on or before the construction deadline.</div>
-{% for message in messages %}<div class="alert alert-success">{{ message }}</div>{% endfor %}
-<form method="post">{% csrf_token %}
-{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-<div class="card p-3 mb-4"><h5>House baseline schedule</h5><p class="muted">The baseline is the approved original plan. Revised dates can be entered when an authorised schedule change is agreed.</p>
-<div class="row g-3">
-<div class="col-md-3"><label class="form-label">Baseline construction start *</label>{{ form.baseline_start }}{{ form.baseline_start.errors }}</div>
-<div class="col-md-3"><label class="form-label">Baseline construction completion *</label>{{ form.baseline_completion }}{{ form.baseline_completion.errors }}</div>
-<div class="col-md-3"><label class="form-label">Revised start</label>{{ form.revised_start }}{{ form.revised_start.errors }}</div>
-<div class="col-md-3"><label class="form-label">Revised completion</label>{{ form.revised_completion }}{{ form.revised_completion.errors }}</div>
-<div class="col-12"><label class="form-label">Planning notes / reason for revision</label>{{ form.planning_notes }}{{ form.planning_notes.errors }}</div>
-</div></div>
-<div class="card"><div class="card-header bg-white"><h5 class="mb-0">Construction milestone schedule</h5><div class="muted">Enter baseline dates for each active construction milestone. Dates must follow the milestone sequence: each activity starts after the previous activity ends. Overlapping or same-day milestone dates are rejected. Revised dates are optional and must preserve the same sequence.</div></div>
-{{ formset.management_form }}
-<div class="table-responsive"><table class="table table-hover mb-0"><thead class="table-light"><tr><th>Milestone</th><th>Baseline start</th><th>Baseline end</th><th>Revised start</th><th>Revised end</th><th>Notes</th></tr></thead><tbody>
-{% for f in formset %}<tr><td>{{ f.id }}{{ f.stage }}<strong>{{ f.instance.stage.name }}</strong>{% if f.non_field_errors %}<div class="text-danger small">{{ f.non_field_errors }}</div>{% endif %}</td>
-<td>{{ f.planned_start }}{{ f.planned_start.errors }}</td><td>{{ f.planned_end }}{{ f.planned_end.errors }}</td>
-<td>{{ f.revised_start }}{{ f.revised_start.errors }}</td><td>{{ f.revised_end }}{{ f.revised_end.errors }}</td><td>{{ f.notes }}{{ f.notes.errors }}</td></tr>{% endfor %}
-</tbody></table></div><div class="card-footer bg-white d-flex gap-2"><button class="btn btn-primary">Save house schedule</button><a class="btn btn-outline-secondary" href="{% url 'scheduling:programme-schedule' %}">Cancel</a></div></div></form>
+<body><nav class="navbar navbar-dark bg-primary"><div class="container-fluid wrap"><a class="navbar-brand" href="{% url 'scheduling:programme-schedule' %}"><span class="hrmis-navbar-brand">
+  <img class="hrmis-navbar-logo" src="/static/hrmis/images/iom-logo-hd.jpg" alt="International Organization for Migration (IOM)">
+  <span class="hrmis-navbar-title">Housing Reconstruction Information Management System <span class="hrmis-navbar-acronym">(HRMIS)</span></span>
+</span></a><a class="btn btn-sm btn-outline-light" href="{% url 'scheduling:programme-schedule' %}">Back to programme schedule</a></div></nav>
+
+<main class="container-fluid wrap py-4 py-lg-5">
+
+  <!-- Header -->
+  <div class="mb-4">
+    <div class="eyebrow mb-1">House-level baseline and milestone dates</div>
+    <h1 class="page-title mb-1">{{ house.house_id }} – Construction schedule</h1>
+    <p class="text-secondary mb-0">{{ house.beneficiary_name }} · {{ house.village.name }}, {{ house.village.municipality.name }}, {{ house.village.municipality.island.name }}</p>
+  </div>
+
+  <!-- Programme dates -->
+  <section class="panel mb-4" aria-label="Programme dates">
+    <div class="dates-strip">
+      <div class="date-item">
+        <div class="date-label">Programme commencement</div>
+        <div class="date-value">{{ plan.project_start|date:"d M Y" }}</div>
+      </div>
+      <div class="date-item is-key">
+        <div class="date-label">Construction deadline</div>
+        <div class="date-value">{{ plan.construction_deadline|date:"d M Y" }}</div>
+      </div>
+      <div class="date-item">
+        <div class="date-label">Overall project end</div>
+        <div class="date-value">{{ plan.project_end|date:"d M Y" }}</div>
+      </div>
+    </div>
+    <div class="dates-footnote">Baseline construction completion must be on or before the construction deadline.</div>
+  </section>
+
+  {% for message in messages %}<div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'success' }}{% endif %}" role="alert">{{ message }}</div>{% endfor %}
+
+  <form method="post" class="plan-form">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+    <!-- House baseline schedule -->
+    <section class="panel panel-pad mb-4">
+      <h2 class="panel-title mb-1">House baseline schedule</h2>
+      <p class="muted mb-4">The baseline is the approved original plan. Revised dates can be entered when an authorised schedule change is agreed.</p>
+
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <div class="date-group">
+            <div class="date-group-title">Baseline</div>
+            <div class="row g-3">
+              <div class="col-12 col-md-6"><label class="form-label">Baseline construction start *</label>{{ form.baseline_start }}{{ form.baseline_start.errors }}</div>
+              <div class="col-12 col-md-6"><label class="form-label">Baseline construction completion *</label>{{ form.baseline_completion }}{{ form.baseline_completion.errors }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="date-group is-revised">
+            <div class="date-group-title">Revised (optional)</div>
+            <div class="row g-3">
+              <div class="col-12 col-md-6"><label class="form-label">Revised start</label>{{ form.revised_start }}{{ form.revised_start.errors }}</div>
+              <div class="col-12 col-md-6"><label class="form-label">Revised completion</label>{{ form.revised_completion }}{{ form.revised_completion.errors }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Planning notes / reason for revision</label>{{ form.planning_notes }}{{ form.planning_notes.errors }}
+        </div>
+      </div>
+    </section>
+
+    <!-- Milestone schedule -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title mb-1">Construction milestone schedule</h2>
+        <div class="muted">Enter baseline dates for each active construction milestone. Dates must follow the milestone sequence: each activity starts after the previous activity ends. Overlapping or same-day milestone dates are rejected. Revised dates are optional and must preserve the same sequence.</div>
+      </div>
+
+      {{ formset.management_form }}
+      <div class="table-responsive">
+        <table class="table milestone-table">
+          <thead>
+            <tr>
+              <th class="col-milestone">Milestone</th>
+              <th class="col-date">Baseline start</th>
+              <th class="col-date">Baseline end</th>
+              <th class="col-date is-revised">Revised start</th>
+              <th class="col-date is-revised">Revised end</th>
+              <th class="col-notes">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for f in formset %}
+            <tr>
+              <td>{{ f.id }}{{ f.stage }}<div class="step"><span class="step-num" aria-hidden="true">{{ forloop.counter }}</span><strong class="step-name">{{ f.instance.stage.name }}</strong></div>{% if f.non_field_errors %}<div class="row-error">{{ f.non_field_errors }}</div>{% endif %}</td>
+              <td>{{ f.planned_start }}{{ f.planned_start.errors }}</td>
+              <td>{{ f.planned_end }}{{ f.planned_end.errors }}</td>
+              <td class="is-revised">{{ f.revised_start }}{{ f.revised_start.errors }}</td>
+              <td class="is-revised">{{ f.revised_end }}{{ f.revised_end.errors }}</td>
+              <td>{{ f.notes }}{{ f.notes.errors }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel-foot">
+        <button class="btn btn-primary">Save house schedule</button>
+        <a class="btn btn-outline-secondary" href="{% url 'scheduling:programme-schedule' %}">Cancel</a>
+      </div>
+    </section>
+  </form>
 </main><script>
 // Client-side convenience check; Django repeats the same validation on the server.
 document.querySelector('form').addEventListener('submit', function (event) {

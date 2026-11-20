@@ -41,28 +41,70 @@ def _programme_plan():
 
 
 def _approved_progress_by_house():
+    """
+    Return current approved progress and a conservative, time-series trend per house.
+
+    A forecast requires at least two distinct approved update dates, at least
+    seven days between the first and latest observations, and a positive net
+    increase in weighted progress. Multiple stage updates on the same date are
+    treated as one observation so they do not artificially inflate the rate.
+    """
     stages = list(ConstructionStage.objects.filter(is_active=True).order_by("sequence", "name"))
     total_weight = sum((s.weight for s in stages), ZERO)
     records = ProgressRecord.objects.filter(
         review_status=ProgressRecord.ReviewStatus.APPROVED, stage__is_active=True,
-    ).select_related("stage").order_by("house_id", "stage_id", "-update_date", "-created_at")
-    latest = {}
+    ).select_related("stage").order_by("house_id", "update_date", "created_at", "pk")
+
+    by_house = {}
     for record in records:
-        latest.setdefault((record.house_id, record.stage_id), record)
+        observed_at = timezone.localtime(record.update_date)
+        observed_date = observed_at.date()
+        by_house.setdefault(record.house_id, {}).setdefault(observed_date, []).append(record)
+
     result = {}
-    for house_id in {key[0] for key in latest}:
-        weighted, stage_values, latest_dates = ZERO, {}, []
-        for stage in stages:
-            record = latest.get((house_id, stage.pk))
-            pct = record.percentage if record else ZERO
-            stage_values[stage.pk] = pct
-            weighted += stage.weight * pct / HUNDRED
-            if record:
-                latest_dates.append(record.update_date)
+    for house_id, dated_records in by_house.items():
+        latest_by_stage = {}
+        snapshots = []
+        for observed_date in sorted(dated_records):
+            for record in dated_records[observed_date]:
+                latest_by_stage[record.stage_id] = record.percentage
+
+            weighted = sum(
+                (stage.weight * latest_by_stage.get(stage.pk, ZERO) / HUNDRED for stage in stages),
+                ZERO,
+            )
+            actual_on_date = (
+                (weighted / total_weight * HUNDRED).quantize(Decimal("0.01"))
+                if total_weight else ZERO
+            )
+            snapshots.append((observed_date, actual_on_date))
+
+        latest_records = {}
+        for stage_id in {record.stage_id for records_on_date in dated_records.values() for record in records_on_date}:
+            latest_records[stage_id] = max(
+                (record for records_on_date in dated_records.values() for record in records_on_date
+                 if record.stage_id == stage_id),
+                key=lambda record: (record.update_date, record.created_at, record.pk),
+            )
+
+        stage_values = {stage.pk: latest_records[stage.pk].percentage if stage.pk in latest_records else ZERO
+                        for stage in stages}
+        latest_dates = [record.update_date for record in latest_records.values()]
+        first_date, first_actual = snapshots[0]
+        latest_date, latest_actual = snapshots[-1]
+        span_days = (latest_date - first_date).days
+        net_increase = latest_actual - first_actual
+        rate_per_day = (net_increase / Decimal(span_days)) if span_days > 0 and net_increase > ZERO else ZERO
+
         result[house_id] = {
-            "actual": (weighted / total_weight * HUNDRED).quantize(Decimal("0.01")) if total_weight else ZERO,
+            "actual": latest_actual,
             "stages": stage_values,
             "last_approved_at": max(latest_dates) if latest_dates else None,
+            "trend_points": len(snapshots),
+            "trend_span_days": span_days,
+            "trend_rate_per_day": rate_per_day,
+            "trend_first_actual": first_actual,
+            "trend_latest_date": latest_date,
         }
     return stages, total_weight, result
 
@@ -121,16 +163,50 @@ def _schedule_metrics(house, schedule, stages, total_weight, progress_map, as_of
         and house.status not in (House.Status.ON_HOLD, House.Status.COMPLETED, House.Status.HANDED_OVER)
     )
 
+    # Conservative forecast: extrapolate only from distinct, dated approved
+    # progress observations, never from programme elapsed time alone.
     forecast_finish = None
     projected_risk = False
-    if schedule and schedule.baseline_start and actual > ZERO and as_of > schedule.baseline_start:
-        elapsed = Decimal(max((as_of - schedule.baseline_start).days, 1))
-        total_estimated_days = elapsed * HUNDRED / actual
-        remaining = max(total_estimated_days - elapsed, ZERO)
-        forecast_finish = as_of + timedelta(days=int(remaining.to_integral_value()))
-        projected_risk = forecast_finish > (schedule.revised_completion or schedule.baseline_completion or date.max)
-    if schedule and schedule.baseline_start and as_of > schedule.baseline_start and actual == ZERO and no_recent_approval:
+    forecast_label = "No approved progress yet"
+    forecast_rate = progress.get("trend_rate_per_day", ZERO)
+    trend_points = progress.get("trend_points", 0)
+    trend_span_days = progress.get("trend_span_days", 0)
+    latest_trend_date = progress.get("trend_latest_date")
+
+    if house.status in (House.Status.COMPLETED, House.Status.HANDED_OVER):
+        forecast_finish = latest_trend_date or as_of
+        forecast_label = "Completed / handed over"
+    elif actual >= HUNDRED:
+        forecast_finish = latest_trend_date or as_of
+        forecast_label = "100% verified — completion confirmation pending"
+    elif trend_points < 2:
+        forecast_label = "Awaiting a second approved update"
+    elif trend_span_days < 7:
+        forecast_label = "Building progress history (minimum 7 days)"
+    elif forecast_rate <= ZERO:
+        forecast_label = "No measurable progress increase"
+    elif latest_trend_date and (as_of - latest_trend_date).days >= inactive_days:
+        forecast_label = "Trend is stale — approved update required"
+    else:
+        remaining_progress = max(HUNDRED - actual, ZERO)
+        days_to_finish = (remaining_progress / forecast_rate)
+        forecast_finish = as_of + timedelta(days=int(days_to_finish.to_integral_value(rounding="ROUND_CEILING")))
+        forecast_label = "Forecast based on approved progress trend"
+        expected_completion = (
+            (schedule.revised_completion or schedule.baseline_completion)
+            if schedule else None
+        )
+        if expected_completion and forecast_finish > expected_completion:
+            projected_risk = True
+            forecast_label = "At risk — projected after baseline completion"
+
+    if (forecast_finish and schedule and schedule.baseline_completion
+            and forecast_finish > schedule.baseline_completion):
         projected_risk = True
+    if (forecast_finish and schedule and schedule.baseline_completion
+            and forecast_finish > schedule.baseline_completion
+            and forecast_label == "Forecast based on approved progress trend"):
+        forecast_label = "At risk — projected after baseline completion"
 
     if house.status == House.Status.ON_HOLD:
         status, label = "ON_HOLD", "On hold"
@@ -155,6 +231,10 @@ def _schedule_metrics(house, schedule, stages, total_weight, progress_map, as_of
         "no_recent_approval": no_recent_approval,
         "projected_finish": forecast_finish,
         "projected_risk": projected_risk,
+        "forecast_label": forecast_label,
+        "forecast_rate_per_day": forecast_rate,
+        "forecast_trend_points": trend_points,
+        "forecast_trend_span_days": trend_span_days,
     }
 
 

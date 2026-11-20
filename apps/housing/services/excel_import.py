@@ -96,6 +96,21 @@ def import_houses_from_workbook(uploaded_file, user):
             if not engineer:
                 errors.append(f"Row {row_number}: active engineer employee ID '{engineer_id}' was not found.")
 
+        damage_classification = _text(data.get("damage_classification"))
+        reconstruction_type = _text(data.get("reconstruction_type"))
+        valid_damage = {value for value, _label in House.DamageClassification.choices}
+        valid_reconstruction = {value for value, _label in House.ReconstructionType.choices}
+        if damage_classification and damage_classification not in valid_damage:
+            errors.append(
+                f"Row {row_number}: damage_classification must be one of: "
+                + ", ".join(valid_damage) + "."
+            )
+        if reconstruction_type and reconstruction_type not in valid_reconstruction:
+            errors.append(
+                f"Row {row_number}: reconstruction_type must be one of: "
+                + ", ".join(valid_reconstruction) + "."
+            )
+
         prepared.append({
             "row_number": row_number, "house_id": house_id, "village": village,
             "latitude": latitude, "longitude": longitude, "assigned_engineer": engineer,
@@ -108,8 +123,8 @@ def import_houses_from_workbook(uploaded_file, user):
             "address_details": _text(data.get("address_details")),
             "house_type": _text(data.get("house_type")),
             "bedrooms": optional_int("bedrooms"),
-            "damage_classification": _text(data.get("damage_classification")),
-            "reconstruction_type": _text(data.get("reconstruction_type")),
+            "damage_classification": damage_classification,
+            "reconstruction_type": reconstruction_type,
             "contractor": _text(data.get("contractor")),
             "notes": _text(data.get("notes")),
         })

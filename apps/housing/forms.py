@@ -28,8 +28,8 @@ class HouseForm(forms.ModelForm):
             "longitude": forms.NumberInput(attrs={"class": "form-control", "step": "0.0000001"}),
             "house_type": forms.TextInput(attrs={"class": "form-control"}),
             "bedrooms": forms.NumberInput(attrs={"class": "form-control", "min": 0}),
-            "damage_classification": forms.TextInput(attrs={"class": "form-control"}),
-            "reconstruction_type": forms.TextInput(attrs={"class": "form-control"}),
+            "damage_classification": forms.Select(attrs={"class": "form-select"}),
+            "reconstruction_type": forms.Select(attrs={"class": "form-select"}),
             "contractor": forms.TextInput(attrs={"class": "form-control"}),
             "assigned_engineer": forms.Select(attrs={"class": "form-select"}),
             "status": forms.Select(attrs={"class": "form-select"}),
@@ -38,6 +38,17 @@ class HouseForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Preserve historical free-text values as selectable legacy options on edit.
+        # This avoids silently clearing older records that predate the controlled lists.
+        if self.instance and self.instance.pk:
+            for field_name in ("damage_classification", "reconstruction_type"):
+                current_value = getattr(self.instance, field_name, "")
+                valid_values = {value for value, _label in self.fields[field_name].choices}
+                if current_value and current_value not in valid_values:
+                    self.fields[field_name].choices = list(self.fields[field_name].choices) + [
+                        (current_value, f"{current_value} (existing value)")
+                    ]
+
         self.fields["village"].queryset = self.fields["village"].queryset.select_related("municipality__island").order_by(
             "municipality__island__name", "municipality__name", "name"
         )

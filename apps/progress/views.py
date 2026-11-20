@@ -227,4 +227,10 @@ def progress_review(request, record_pk):
             return redirect("progress:house-progress", house_pk=record.house_id)
     else:
         form = ProgressReviewForm()
-    return render(request, "progress/progress_review.html", {"record": record, "form": form})
+    return render(request, "progress/progress_review.html", {
+        "record": record,
+        "form": form,
+        # The review template uses these values to construct the house map link.
+        "house_latitude": record.house.latitude,
+        "house_longitude": record.house.longitude,
+    })

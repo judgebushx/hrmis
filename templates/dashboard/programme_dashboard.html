@@ -27,16 +27,128 @@ body{background:#f4f6fa;color:#17212f}
 .small-muted{font-size:.78rem;color:#718096}
 .legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
 @media(max-width:768px){.map-panel{height:340px}.chart-panel{height:260px}.kpi-value{font-size:1.65rem}}
+
+/* Dashboard filter toolbar: prevent Apply/Reset from escaping the filter card */
+.dashboard-filter-form {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 2.4fr)
+    minmax(150px, 1.5fr)
+    minmax(150px, 1.5fr)
+    minmax(150px, 1.5fr)
+    minmax(95px, .8fr)
+    minmax(110px, .9fr)
+    max-content;
+  gap: .5rem;
+  align-items: end;
+  width: 100%;
+  min-width: 0;
+}
+.dashboard-filter-form > div {
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+.dashboard-filter-form .form-control,
+.dashboard-filter-form .form-select {
+  width: 100%;
+  min-width: 0;
+}
+.dashboard-filter-actions {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  gap: .5rem;
+  white-space: nowrap;
+}
+.dashboard-filter-actions .btn {
+  flex: 0 0 auto;
+}
+@media (max-width: 1199.98px) {
+  .dashboard-filter-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .dashboard-filter-actions {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 575.98px) {
+  .dashboard-filter-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-filter-actions {
+    grid-column: 1;
+    justify-content: flex-start;
+  }
+}
+
+/* Expandable map */
+body.map-is-maximized{overflow:hidden}
+#programme-map-shell.is-maximized{position:fixed;inset:12px;z-index:2000;display:flex;flex-direction:column;border-radius:16px;box-shadow:0 0 0 100vmax rgba(15,35,65,.55)}
+#programme-map-shell.is-maximized .card-body{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
+#programme-map-shell.is-maximized .map-panel{height:auto;flex:1 1 auto;min-height:0}
+.map-header-tools{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+.house-marker{background:transparent;border:0;filter:drop-shadow(0 1px 2px rgba(15,35,65,.45))}
+.house-marker svg{display:block}
+.legend-house{width:16px;height:16px;margin-right:5px;vertical-align:-3px}
+
+/* House popups */
+.house-popup .leaflet-popup-content-wrapper{border-radius:14px;padding:0;border:1px solid #dde5f3;box-shadow:0 12px 32px rgba(15,35,65,.24)}
+.house-popup .leaflet-popup-content{margin:0;font-family:inherit}
+.house-popup .leaflet-popup-tip{box-shadow:0 6px 12px rgba(15,35,65,.14)}
+.house-popup a.leaflet-popup-close-button{top:10px;right:10px;width:24px;height:24px;font-size:20px;line-height:22px;border-radius:50%;color:#718096;text-align:center;padding:0}
+.house-popup a.leaflet-popup-close-button:hover{background:#eef1f6;color:#17212f}
+.hp{padding:16px 18px 16px;font-size:.85rem;color:#17212f;line-height:1.4}
+.hp-head{padding-right:22px}
+.hp-id{font-weight:650;font-size:1.08rem;letter-spacing:-.01em}
+.hp-loc{display:flex;align-items:center;gap:.3rem;margin-top:.15rem;color:#687789;font-size:.8rem}
+.hp-loc svg{width:.85rem;height:.85rem;flex:none}
+.hp-pill{display:inline-flex;align-items:center;gap:.35rem;margin-top:.6rem;padding:.25rem .6rem;border-radius:999px;font-size:.75rem;font-weight:500;background:#eef1f6;color:#5b6b8c}
+.hp-pill::before{content:"";width:.42rem;height:.42rem;border-radius:50%;background:currentColor}
+.hp-pill[data-tone="blue"]{background:#e7f0ff;color:#0a58ca}
+.hp-pill[data-tone="green"]{background:#e4f4ea;color:#14673b}
+.hp-pill[data-tone="amber"]{background:#fdf1d6;color:#8a5d00}
+.hp-progress{margin-top:.9rem}
+.hp-progress-top{display:flex;justify-content:space-between;align-items:baseline;color:#687789;font-size:.78rem}
+.hp-progress-top strong{color:#17212f;font-size:.95rem;font-variant-numeric:tabular-nums}
+.hp-bar{height:6px;border-radius:999px;background:#e9edf3;overflow:hidden;margin-top:.35rem}
+.hp-bar>span{display:block;height:100%;border-radius:999px;background:#0d6efd}
+.hp-rows{margin-top:.75rem}
+.hp-row{display:flex;justify-content:space-between;gap:1rem;padding:.5rem 0;border-top:1px solid #eef1f6}
+.hp-key{color:#687789;white-space:nowrap}
+.hp-val{font-weight:500;text-align:right}
+.hp-val.is-empty{color:#8a96ab;font-style:italic;font-weight:400}
+.hp-note{display:flex;gap:.45rem;align-items:flex-start;margin-top:.7rem;padding:.55rem .7rem;border-radius:9px;font-size:.78rem}
+.hp-note svg{width:.95rem;height:.95rem;flex:none;margin-top:.05rem}
+.hp-note.ok{background:#e4f4ea;color:#14673b}
+.hp-note.warn{background:#fff1e3;color:#a14a00}
+.house-popup a.hp-btn{display:block;margin-top:.8rem;padding:.55rem .9rem;border-radius:9px;background:#0d6efd;color:#fff;font-weight:500;text-align:center;text-decoration:none}
+.house-popup a.hp-btn:hover{background:#0b5ed7;color:#fff}
+
+/* House-level reconstruction register: keep every header over its data */
+.register-table { min-width: 980px; }
+.register-table th,
+.register-table td { vertical-align: middle; text-align: left; }
+.register-table .col-nowrap { white-space: nowrap; }
+.register-table .col-actions { text-align: right; white-space: nowrap; width: 1%; }
+.register-table .col-actions .btn-group-inline { display: inline-flex; gap: .25rem; }
+
 </style>
 <link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
 </head>
 <body>
 <nav class="navbar navbar-dark">
   <div class="container-fluid dashboard-wrap">
-    <a class="navbar-brand fw-semibold" href="{% url 'housing:house-list' %}"><img class="iom-navbar-logo" src="/static/hrmis/images/iom-logo.png" alt="IOM – UN Migration"><span class="brand-caption">Housing Reconstruction Monitoring</span></a>
+    <a class="navbar-brand fw-semibold" href="{% url 'housing:house-list' %}"><span class="hrmis-navbar-brand">
+  <img class="hrmis-navbar-logo" src="/static/hrmis/images/iom-logo-hd.jpg" alt="International Organization for Migration (IOM)">
+  <span class="hrmis-navbar-title">Housing Reconstruction Information Management System <span class="hrmis-navbar-acronym">(HRMIS)</span></span>
+</span></a>
     <div class="d-flex align-items-center gap-3 text-white">
       <span class="small">{{ request.user.get_full_name|default:request.user.username }}</span>
       <a class="btn btn-sm btn-outline-light" href="{% url 'scheduling:programme-schedule' %}">Planning &amp; Scheduling</a>
+      {% if request.user.is_superuser %}<a class="btn btn-sm btn-outline-light" href="{% url 'reports:centre' %}">Reports &amp; Analytics</a>{% endif %}
       <a class="btn btn-sm btn-outline-light" href="{% url 'housing:house-list' %}">Housing registry</a>
       <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-light">Sign out</button></form>
     </div>
@@ -127,7 +239,7 @@ body{background:#f4f6fa;color:#17212f}
 
   <section class="card section-card mb-4">
     <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
+      <form method="get" class="dashboard-filter-form">
         <div class="col-12 col-xl-3">
           <label class="form-label small fw-semibold">Search houses / engineer</label>
           <input class="form-control" name="q" value="{{ search }}" placeholder="House ID, beneficiary, village or engineer">
@@ -162,7 +274,7 @@ body{background:#f4f6fa;color:#17212f}
             {% for days in stale_days_options %}<option value="{{ days }}" {% if stale_days == days %}selected{% endif %}>{{ days }} days</option>{% endfor %}
           </select>
         </div>
-        <div class="col-6 col-xl-1 d-flex gap-2">
+        <div class="dashboard-filter-actions">
           <button class="btn btn-primary flex-grow-1">Apply</button>
           <a class="btn btn-outline-secondary" href="{% url 'dashboard:programme-dashboard' %}">Reset</a>
         </div>
@@ -218,18 +330,21 @@ body{background:#f4f6fa;color:#17212f}
     </div>
   </section>
 
-  <section class="card section-card mb-4">
-    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center">
+  <section class="card section-card mb-4" id="programme-map-shell">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
       <span class="section-title">Geographical distribution of registered houses</span>
-      <span class="small-muted">{{ registered_count }} mapped houses in current scope</span>
+      <div class="map-header-tools">
+        <span class="small-muted">{{ registered_count }} mapped houses in current scope</span>
+        <button type="button" id="map-maximize-toggle" class="btn btn-sm btn-outline-primary" aria-pressed="false" aria-label="Maximize map">⛶ Expand map</button>
+      </div>
     </div>
     <div class="card-body">
       <div class="d-flex flex-wrap gap-3 small mb-2">
-        <span><span class="legend-dot" style="background:#6c757d"></span>Registered</span>
-        <span><span class="legend-dot" style="background:#0d6efd"></span>Under reconstruction</span>
-        <span><span class="legend-dot" style="background:#198754"></span>Completed / handed over</span>
-        <span><span class="legend-dot" style="background:#ffc107"></span>On hold</span>
-        <span><span class="legend-dot" style="background:#fd7e14"></span>Overdue follow-up (orange outline)</span>
+        <span><svg class="legend-house" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 2.5 11H5v10h5v-6h4v6h5V11h2.5z" fill="#6c757d"/></svg>Registered</span>
+        <span><svg class="legend-house" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 2.5 11H5v10h5v-6h4v6h5V11h2.5z" fill="#0d6efd"/></svg>Under reconstruction</span>
+        <span><svg class="legend-house" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 2.5 11H5v10h5v-6h4v6h5V11h2.5z" fill="#198754"/></svg>Completed / handed over</span>
+        <span><svg class="legend-house" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 2.5 11H5v10h5v-6h4v6h5V11h2.5z" fill="#ffc107"/></svg>On hold</span>
+        <span><svg class="legend-house" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 2.5 11H5v10h5v-6h4v6h5V11h2.5z" fill="#6c757d" stroke="#fd7e14" stroke-width="2" stroke-linejoin="round"/></svg>Overdue follow-up (orange outline)</span>
       </div>
       <div id="programme-map" class="map-panel"></div>
       {% if not map_points %}<div class="small text-secondary mt-2">No houses match the selected filters.</div>{% endif %}
@@ -282,18 +397,18 @@ body{background:#f4f6fa;color:#17212f}
   <section class="card section-card mb-4">
     <div class="card-header bg-white section-title">House-level reconstruction register</div>
     <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead class="table-light"><tr><th>House ID</th><th>Location</th><th>Engineer</th><th>Status</th><th>Verified progress</th><th>Last approved update</th><th>Pending reviews</th><th></th></tr></thead>
+      <table class="table table-hover mb-0 register-table">
+        <thead class="table-light"><tr><th class="col-nowrap">House ID</th><th>Location</th><th>Engineer</th><th class="col-nowrap">Status</th><th>Verified progress</th><th>Last approved update</th><th class="col-nowrap">Pending reviews</th><th class="col-actions"><span class="visually-hidden">Actions</span></th></tr></thead>
         <tbody>{% for house in houses %}
           <tr>
-            <td class="fw-semibold"><a href="{% url 'housing:house-detail' house.pk %}">{{ house.house_id }}</a><div class="small-muted">{{ house.beneficiary_name|default:'Beneficiary not recorded' }}</div></td>
+            <td class="fw-semibold col-nowrap"><a href="{% url 'housing:house-detail' house.pk %}">{{ house.house_id }}</a><div class="small-muted fw-normal">{{ house.beneficiary_name|default:'Beneficiary not recorded' }}</div></td>
             <td>{{ house.village.name }}, {{ house.village.municipality.name }}<div class="small-muted">{{ house.village.municipality.island.name }}</div></td>
             <td>{{ house.assigned_engineer|default:'Unassigned' }}</td>
-            <td><span class="badge text-bg-light">{{ house.get_status_display }}</span></td>
+            <td class="col-nowrap"><span class="badge text-bg-light">{{ house.get_status_display }}</span></td>
             <td style="min-width:150px"><div class="d-flex justify-content-between small"><span>{{ house.dashboard_progress }}%</span></div><div class="progress"><div class="progress-bar" style="width:{{ house.dashboard_progress }}%"></div></div></td>
-            <td>{% if house.dashboard_stale %}<span class="badge text-bg-warning">{{ house.dashboard_days_since_update }} days</span>{% endif %}{{ house.dashboard_last_update }}</td>
-            <td>{% if house.dashboard_pending %}<span class="badge text-bg-warning">{{ house.dashboard_pending }}</span>{% else %}0{% endif %}</td>
-            <td class="d-flex gap-1"><a class="btn btn-sm btn-outline-primary" href="{% url 'progress:house-progress' house.pk %}">Progress</a>{% if request.user.is_superuser %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'scheduling:house-schedule-edit' house.pk %}">Schedule</a>{% endif %}</td>
+            <td>{{ house.dashboard_last_update }}{% if house.dashboard_stale %}<div class="mt-1"><span class="badge text-bg-warning">{{ house.dashboard_days_since_update }} days</span></div>{% endif %}</td>
+            <td class="col-nowrap">{% if house.dashboard_pending %}<span class="badge text-bg-warning">{{ house.dashboard_pending }}</span>{% else %}0{% endif %}</td>
+            <td class="col-actions"><div class="btn-group-inline"><a class="btn btn-sm btn-outline-primary" href="{% url 'progress:house-progress' house.pk %}">Progress</a>{% if request.user.is_superuser %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'scheduling:house-schedule-edit' house.pk %}">Schedule</a>{% endif %}</div></td>
           </tr>
         {% empty %}<tr><td colspan="8" class="text-center text-secondary py-4">No houses match the selected filters.</td></tr>{% endfor %}</tbody>
       </table>
@@ -353,30 +468,138 @@ body{background:#f4f6fa;color:#17212f}
     "HANDED_OVER":"#198754",
     "ON_HOLD":"#ffc107"
   };
+  // House-shaped marker: filled with the status colour; overdue houses get a thicker orange outline and are slightly larger
+  function houseIcon(colour, stale){
+    const size = stale ? 38 : 32;
+    const stroke = stale ? "#fd7e14" : "#ffffff";
+    const strokeWidth = stale ? 2.6 : 1.6;
+    const svg = '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" aria-hidden="true">' +
+      '<path d="M12 2.5 2.5 11H5v10h5v-6h4v6h5V11h2.5z" fill="' + colour + '" stroke="' + stroke +
+      '" stroke-width="' + strokeWidth + '" stroke-linejoin="round"/></svg>';
+    return L.divIcon({
+      className: "house-marker",
+      html: svg,
+      iconSize: [size, size],
+      iconAnchor: [size/2, size/2],
+      popupAnchor: [0, -size/2]
+    });
+  }
+  // Popup card. Built with DOM nodes and textContent, so house data is never injected as HTML.
+  const STATUS_TONES = {REGISTERED:"grey", IN_PROGRESS:"blue", COMPLETED:"green", HANDED_OVER:"green", ON_HOLD:"amber"};
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  function icon(pathData){
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", pathData);
+    svg.appendChild(path);
+    return svg;
+  }
+  function el(tag, className, text){
+    const node = document.createElement(tag);
+    if(className) node.className = className;
+    if(text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+  function row(key, value, muted){
+    const r = el("div", "hp-row");
+    r.appendChild(el("span", "hp-key", key));
+    r.appendChild(el("span", "hp-val" + (muted ? " is-empty" : ""), value));
+    return r;
+  }
+  function buildPopup(point){
+    const card = el("div", "hp");
+
+    const head = el("div", "hp-head");
+    head.appendChild(el("div", "hp-id", point.id));
+    const loc = el("div", "hp-loc");
+    loc.appendChild(icon("M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"));
+    loc.appendChild(el("span", null, point.location));
+    head.appendChild(loc);
+    const pill = el("span", "hp-pill", point.status);
+    pill.dataset.tone = STATUS_TONES[point.status_code] || "grey";
+    head.appendChild(pill);
+    card.appendChild(head);
+
+    const pct = Math.max(0, Math.min(100, Number(point.progress) || 0));
+    const prog = el("div", "hp-progress");
+    const top = el("div", "hp-progress-top");
+    top.appendChild(el("span", null, "Verified progress"));
+    top.appendChild(el("strong", null, pct + "%"));
+    prog.appendChild(top);
+    const bar = el("div", "hp-bar");
+    const fill = el("span");
+    fill.style.width = pct + "%";
+    bar.appendChild(fill);
+    prog.appendChild(bar);
+    card.appendChild(prog);
+
+    const rows = el("div", "hp-rows");
+    const engineerName = point.engineer || "Unassigned";
+    rows.appendChild(row("Engineer", engineerName, engineerName === "Unassigned"));
+    const last = point.last_update || "No approved update yet";
+    rows.appendChild(row("Last approved update", last, last === "No approved update yet"));
+    card.appendChild(rows);
+
+    const note = el("div", "hp-note " + (point.stale ? "warn" : "ok"));
+    if(point.stale){
+      note.appendChild(icon("M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"));
+      note.appendChild(el("span", null, "Follow-up required · " + point.days_since_update + " days without approved progress"));
+    } else {
+      note.appendChild(icon("M20 6 9 17l-5-5"));
+      note.appendChild(el("span", null, "Within follow-up threshold"));
+    }
+    card.appendChild(note);
+
+    const link = el("a", "hp-btn", "Open house record");
+    link.href = point.url;
+    card.appendChild(link);
+    return card;
+  }
+
   points.forEach(function(point){
     const lat = Number(point.lat), lon = Number(point.lon);
     if(!Number.isFinite(lat)||!Number.isFinite(lon)||lat < -90||lat > 90||lon < -180||lon > 180) return;
     const colour = markerColours[point.status_code] || "#6c757d";
-    const marker = L.circleMarker([lat,lon],{
-      radius:point.stale?10:8, color:point.stale?"#fd7e14":"#ffffff", weight:point.stale?4:2, fillColor:colour, fillOpacity:.95
+    const marker = L.marker([lat,lon],{
+      icon: houseIcon(colour, point.stale),
+      title: String(point.id || "")
     });
-    const popup = document.createElement("div");
-    const title = document.createElement("strong"); title.textContent = point.id;
-    const location = document.createElement("div"); location.textContent = point.location;
-    const status = document.createElement("div"); status.textContent = "Status: " + point.status;
-    const progress = document.createElement("div"); progress.textContent = "Verified progress: " + point.progress + "%";
-    const engineer = document.createElement("div"); engineer.textContent = "Engineer: " + point.engineer;
-    const lastUpdate = document.createElement("div"); lastUpdate.textContent = "Last approved update: " + point.last_update;
-    const stale = document.createElement("div"); stale.textContent = point.stale ? "FOLLOW-UP REQUIRED: " + point.days_since_update + " days without approved progress" : "Within follow-up threshold";
-    const link = document.createElement("a"); link.href = point.url; link.textContent = "Open house record";
-    popup.append(title,location,status,progress,engineer,lastUpdate,stale,link);
-    marker.bindPopup(popup);
+    marker.bindPopup(buildPopup(point), {className:"house-popup", minWidth:270, maxWidth:310});
     clusters.addLayer(marker);
     bounds.push([lat,lon]);
   });
   map.addLayer(clusters);
   if(bounds.length) map.fitBounds(bounds,{padding:[25,25],maxZoom:13});
   setTimeout(function(){map.invalidateSize();},250);
+
+  // Expand / restore the map
+  const mapShell = document.getElementById("programme-map-shell");
+  const mapToggle = document.getElementById("map-maximize-toggle");
+  function setMapMaximized(maximized){
+    mapShell.classList.toggle("is-maximized", maximized);
+    document.body.classList.toggle("map-is-maximized", maximized);
+    mapToggle.setAttribute("aria-pressed", String(maximized));
+    mapToggle.setAttribute("aria-label", maximized ? "Restore map size" : "Maximize map");
+    mapToggle.textContent = maximized ? "✕ Close expanded map" : "⛶ Expand map";
+    // Leaflet must recalculate its size after the container changes
+    window.setTimeout(function(){
+      map.invalidateSize({pan:false});
+      if(bounds.length) map.fitBounds(bounds,{padding:[25,25],maxZoom:13});
+    },180);
+  }
+  mapToggle.addEventListener("click", function(){
+    setMapMaximized(!mapShell.classList.contains("is-maximized"));
+  });
+  document.addEventListener("keydown", function(event){
+    if(event.key === "Escape" && mapShell.classList.contains("is-maximized")) setMapMaximized(false);
+  });
 
   function readJson(id){return JSON.parse(document.getElementById(id).textContent);}
   function makeChart(id,type,labels,values,label,options){

@@ -1,2 +1,202 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inspection review dashboard | HRMIS</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"><link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
-</head><body class="bg-light"><nav class="navbar navbar-dark bg-primary"><div class="container-fluid"><a class="navbar-brand" href="{% url 'housing:house-list' %}"><img class="iom-navbar-logo" src="/static/hrmis/images/iom-logo.png" alt="IOM – UN Migration"><span class="brand-caption">Housing Reconstruction Monitoring</span></a><div class="d-flex gap-2"><a class="btn btn-sm btn-light" href="{% url 'housing:house-list' %}">Housing registry</a>{% if request.user.is_superuser %}<a class="btn btn-sm btn-warning" href="{% url 'accounts:inspector-list' %}">Manage inspectors</a>{% endif %}</div></div></nav><main class="container-fluid px-4 py-4">{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}<h2>Inspection review dashboard</h2><p class="text-secondary">Central queue for inspection decisions and corrective-action follow-up.</p><div class="row g-3 mb-4"><div class="col-md-3"><div class="card"><div class="card-body"><div class="text-secondary">Pending supervisor reviews</div><div class="display-6 text-warning">{{ pending_count }}</div></div></div></div><div class="col-md-3"><div class="card"><div class="card-body"><div class="text-secondary">Inspections in view</div><div class="display-6">{{ inspections|length }}</div></div></div></div><div class="col-md-3"><div class="card"><div class="card-body"><div class="text-secondary">Open defects</div><div class="display-6 text-danger">{{ open_defects }}</div></div></div></div></div><form class="mb-3"><select class="form-select d-inline-block" name="status" style="max-width:280px"><option value="ALL" {% if selected_status == 'ALL' %}selected{% endif %}>All review statuses</option><option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>Pending review</option><option value="APPROVED" {% if selected_status == 'APPROVED' %}selected{% endif %}>Approved</option><option value="CHANGES" {% if selected_status == 'CHANGES' %}selected{% endif %}>Changes requested</option></select> <button class="btn btn-primary">Filter</button></form><div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Date</th><th>House</th><th>Milestone</th><th>Inspector</th><th>Outcome</th><th>Review status</th><th></th></tr></thead><tbody>{% for i in inspections %}<tr><td>{{ i.inspection_date|date:'d M Y' }}</td><td><strong>{{ i.house.house_id }}</strong></td><td>{{ i.stage.name }}</td><td>{{ i.inspected_by.get_full_name|default:i.inspected_by.username }}</td><td>{{ i.get_outcome_display }}</td><td>{{ i.get_review_status_display }}</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'inspections:inspection-detail' i.pk %}">Open</a>{% if is_reviewer and i.review_status == 'PENDING' %} <a class="btn btn-sm btn-primary" href="{% url 'inspections:inspection-review' i.pk %}">Review</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="7" class="text-center text-secondary py-4">No inspections found for your access scope.</td></tr>{% endfor %}</tbody></table></div></div></main></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inspection review dashboard | HRMIS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+/* The navigation bar is untouched. Everything below is scoped to <main> (plus the page background). */
+body.bg-light { background-color: #f4f6fb !important; }
+
+main {
+  --ink: #0b1f4d;
+  --muted: #5b6b8c;
+  --iom-blue: #0033a0;
+  --iom-blue-dark: #00277d;
+  --mist: #eaf0fa;
+  --line: #dde5f3;
+
+  --tone-blue: #0033a0;  --tone-blue-bg: #eaf0fa;
+  --tone-green: #16834a; --tone-green-bg: #e4f4ea;
+  --tone-amber: #b87800; --tone-amber-bg: #fdf1d6;
+  --tone-red: #c43d3d;   --tone-red-bg: #fbe8e8;
+  --tone-grey: #5b6b8c;  --tone-grey-bg: #eef1f6;
+
+  --bs-body-font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bs-body-color: var(--ink);
+  --bs-link-color: var(--iom-blue);
+  --bs-link-hover-color: var(--iom-blue-dark);
+  --bs-secondary-color: var(--muted);
+  font-family: var(--bs-body-font-family);
+  color: var(--ink);
+}
+
+/* Buttons and forms */
+main .btn { border-radius: .55rem; font-weight: 500; }
+main .btn-primary {
+  --bs-btn-bg: var(--iom-blue); --bs-btn-border-color: var(--iom-blue);
+  --bs-btn-hover-bg: var(--iom-blue-dark); --bs-btn-hover-border-color: var(--iom-blue-dark);
+  --bs-btn-active-bg: var(--iom-blue-dark); --bs-btn-active-border-color: var(--iom-blue-dark);
+  --bs-btn-focus-shadow-rgb: 0, 51, 160;
+}
+main .btn-outline-primary {
+  --bs-btn-color: var(--iom-blue); --bs-btn-border-color: #b9c7e6;
+  --bs-btn-hover-bg: var(--iom-blue); --bs-btn-hover-border-color: var(--iom-blue);
+  --bs-btn-active-bg: var(--iom-blue-dark); --bs-btn-active-border-color: var(--iom-blue-dark);
+  --bs-btn-focus-shadow-rgb: 0, 51, 160;
+}
+.form-label { font-size: .82rem; font-weight: 500; color: var(--muted); margin-bottom: .3rem; }
+main .form-select { border-color: var(--line); border-radius: .55rem; padding: .55rem .8rem; }
+main .form-select:focus { border-color: var(--iom-blue); box-shadow: 0 0 0 .2rem rgba(0, 51, 160, .18); }
+
+/* Header */
+.page-title { font-size: 1.65rem; font-weight: 600; letter-spacing: -.01em; }
+
+/* Panels */
+.panel { background: #fff; border: 1px solid var(--line); border-radius: 1rem; box-shadow: 0 1px 2px rgba(11, 31, 77, .04); overflow: hidden; }
+.panel-head {
+  padding: .8rem 1.25rem; border-bottom: 1px solid var(--line); min-height: 3.5rem;
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap;
+}
+.panel-title { font-size: 1.05rem; font-weight: 600; margin: 0; }
+
+/* KPI cards */
+.inspection-kpi { padding: 1.15rem 1.25rem; position: relative; height: 100%; }
+.inspection-kpi::before { content: ""; position: absolute; left: 0; top: 1rem; bottom: 1rem; width: 4px; border-radius: 0 4px 4px 0; background: var(--iom-blue); }
+.inspection-kpi.tone-amber::before { background: #f2a900; }
+.inspection-kpi.tone-red::before { background: var(--tone-red); }
+.kpi-label { font-size: .85rem; color: var(--muted); }
+.kpi-value { font-size: 2.1rem; font-weight: 600; line-height: 1.15; letter-spacing: -.02em; }
+.kpi-value.is-warning { color: var(--tone-amber); }
+.kpi-value.is-danger { color: var(--tone-red); }
+
+/* Filter */
+.filter-form { display: flex; align-items: flex-end; flex-wrap: wrap; gap: .6rem; margin: 0; }
+.filter-form .form-select { min-width: 240px; }
+
+/* Table */
+.review-table { --bs-table-bg: transparent; width: 100%; min-width: 860px; margin: 0; }
+.review-table th, .review-table td { text-align: left; vertical-align: middle; padding: .85rem 1.25rem; border-color: var(--line); line-height: 1.4; }
+.review-table thead th {
+  background: var(--mist); color: var(--muted); font-size: .76rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; border-bottom: 1px solid var(--line);
+}
+.review-table tbody tr:hover > * { background: #f6f8fd; }
+.review-table .nowrap { white-space: nowrap; }
+.review-table .house-id { font-weight: 600; font-variant-numeric: tabular-nums; }
+.review-table .col-action { text-align: right; white-space: nowrap; width: 1%; }
+.review-table .col-action .btn-row { display: inline-flex; gap: .4rem; }
+.review-table .empty { text-align: center !important; color: var(--muted); padding: 2.75rem 1rem; }
+
+/* Pills */
+.pill {
+  --tone: var(--tone-grey); --tone-bg: var(--tone-grey-bg);
+  display: inline-flex; align-items: center; gap: .4rem; background: var(--tone-bg); color: var(--tone);
+  font-size: .8rem; font-weight: 500; line-height: 1; padding: .3rem .65rem; border-radius: 999px; white-space: nowrap;
+}
+.pill::before { content: ""; width: .45rem; height: .45rem; border-radius: 50%; background: var(--tone); flex: none; }
+.pill[data-tone="blue"]  { --tone: var(--tone-blue);  --tone-bg: var(--tone-blue-bg); }
+.pill[data-tone="green"] { --tone: var(--tone-green); --tone-bg: var(--tone-green-bg); }
+.pill[data-tone="amber"] { --tone: var(--tone-amber); --tone-bg: var(--tone-amber-bg); }
+.pill[data-tone="red"]   { --tone: var(--tone-red);   --tone-bg: var(--tone-red-bg); }
+
+main .alert { border-radius: .75rem; border: 0; }
+</style><link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
+</head><body class="bg-light"><nav class="navbar navbar-dark bg-primary"><div class="container-fluid"><a class="navbar-brand" href="{% url 'housing:house-list' %}"><span class="hrmis-navbar-brand">
+  <img class="hrmis-navbar-logo" src="/static/hrmis/images/iom-logo-hd.jpg" alt="International Organization for Migration (IOM)">
+  <span class="hrmis-navbar-title">Housing Reconstruction Information Management System <span class="hrmis-navbar-acronym">(HRMIS)</span></span>
+</span></a><div class="d-flex gap-2"><a class="btn btn-sm btn-light" href="{% url 'housing:house-list' %}">Housing registry</a>{% if request.user.is_superuser %}<a class="btn btn-sm btn-warning" href="{% url 'accounts:inspector-list' %}">Manage inspectors</a>{% endif %}</div></div></nav>
+
+<main class="container-fluid px-4 py-4 py-lg-5">
+
+  {% for message in messages %}<div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %}" role="alert">{{ message }}</div>{% endfor %}
+
+  <div class="mb-4">
+    <h1 class="page-title mb-1">Inspection review dashboard</h1>
+    <p class="text-secondary mb-0">Central queue for inspection decisions and corrective-action follow-up.</p>
+  </div>
+
+  <!-- KPIs -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="panel inspection-kpi tone-amber">
+        <div class="kpi-label">Pending supervisor reviews</div>
+        <div class="kpi-value is-warning">{{ pending_count }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="panel inspection-kpi">
+        <div class="kpi-label">Inspections in view</div>
+        <div class="kpi-value">{{ inspections|length }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="panel inspection-kpi tone-red">
+        <div class="kpi-label">Open defects</div>
+        <div class="kpi-value is-danger">{{ open_defects }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2 class="panel-title">Inspection queue</h2>
+      <form class="filter-form" method="get">
+        <div>
+          <label class="form-label" for="f-status">Review status</label>
+          <select id="f-status" class="form-select" name="status">
+            <option value="ALL" {% if selected_status == 'ALL' %}selected{% endif %}>All review statuses</option>
+            <option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>Pending review</option>
+            <option value="APPROVED" {% if selected_status == 'APPROVED' %}selected{% endif %}>Approved</option>
+            <option value="CHANGES" {% if selected_status == 'CHANGES' %}selected{% endif %}>Changes requested</option>
+          </select>
+        </div>
+        <button class="btn btn-primary">Filter</button>
+      </form>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table review-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>House</th>
+            <th>Milestone</th>
+            <th>Inspector</th>
+            <th>Outcome</th>
+            <th>Review status</th>
+            <th class="col-action"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for i in inspections %}
+          <tr>
+            <td class="nowrap">{{ i.inspection_date|date:'d M Y' }}</td>
+            <td class="nowrap"><span class="house-id">{{ i.house.house_id }}</span></td>
+            <td>{{ i.stage.name }}</td>
+            <td>{{ i.inspected_by.get_full_name|default:i.inspected_by.username }}</td>
+            <td><span class="pill" data-auto="outcome">{{ i.get_outcome_display }}</span></td>
+            <td><span class="pill" data-tone="{% if i.review_status == 'PENDING' %}amber{% elif i.review_status == 'APPROVED' %}green{% elif 'CHANGES' in i.review_status %}red{% else %}blue{% endif %}">{{ i.get_review_status_display }}</span></td>
+            <td class="col-action"><div class="btn-row"><a class="btn btn-sm btn-outline-primary" href="{% url 'inspections:inspection-detail' i.pk %}">Open</a>{% if is_reviewer and i.review_status == 'PENDING' %}<a class="btn btn-sm btn-primary" href="{% url 'inspections:inspection-review' i.pk %}">Review</a>{% endif %}</div></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="empty">No inspections found for your access scope.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Colour the Outcome pills from their wording (failed = red, conditional/with defects = amber, passed = green).
+  document.querySelectorAll('.pill[data-auto="outcome"]').forEach(function (el) {
+    const t = el.textContent.toLowerCase();
+    let tone = 'blue';
+    if (/fail|reject|not (pass|accept)|unsatisf/.test(t)) tone = 'red';
+    else if (/condition|defect|minor|rework|corrective|partial/.test(t)) tone = 'amber';
+    else if (/pass|satisf|accept|approv|compl/.test(t)) tone = 'green';
+    el.dataset.tone = tone;
+  });
+</script>
+</body></html>

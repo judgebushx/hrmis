@@ -1,11 +1,419 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reports & Analytics | HRMIS</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"><style>body{background:#f5f7fb}.card{border:0;border-radius:13px}.metric{font-size:1.65rem;font-weight:650}</style><link rel="stylesheet" href="/static/hrmis/css/app-theme.css">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reports & Analytics | HRMIS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+/* The navigation bar is untouched. Everything below is scoped to <main> (plus the page background). */
+body { background: #f4f6fb; }
+
+/* Fallback navbar sizing (overridden by iom-brand-theme.css when it loads) */
+:where(.navbar) .hrmis-navbar-brand { display: flex; align-items: center; gap: .75rem; }
+:where(.navbar) .hrmis-navbar-logo { height: 40px; width: auto; display: block; }
+:where(.navbar) .hrmis-navbar-title { font-size: .95rem; font-weight: 500; line-height: 1.25; white-space: normal; }
+
+main {
+  --ink: #0b1f4d;
+  --muted: #5b6b8c;
+  --iom-blue: #0033a0;
+  --iom-blue-dark: #00277d;
+  --mist: #eaf0fa;
+  --line: #dde5f3;
+
+  --tone-blue: #0033a0;  --tone-blue-bg: #eaf0fa;
+  --tone-green: #16834a; --tone-green-bg: #e4f4ea;
+  --tone-amber: #b87800; --tone-amber-bg: #fdf1d6;
+  --tone-red: #c43d3d;   --tone-red-bg: #fbe8e8;
+  --tone-grey: #5b6b8c;  --tone-grey-bg: #eef1f6;
+
+  --bs-body-font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bs-body-color: var(--ink);
+  --bs-link-color: var(--iom-blue);
+  --bs-link-hover-color: var(--iom-blue-dark);
+  --bs-secondary-color: var(--muted);
+  font-family: var(--bs-body-font-family);
+  color: var(--ink);
+}
+
+/* Buttons and forms */
+main .btn { border-radius: .55rem; font-weight: 500; }
+main .btn-primary {
+  --bs-btn-bg: var(--iom-blue); --bs-btn-border-color: var(--iom-blue);
+  --bs-btn-hover-bg: var(--iom-blue-dark); --bs-btn-hover-border-color: var(--iom-blue-dark);
+  --bs-btn-active-bg: var(--iom-blue-dark); --bs-btn-active-border-color: var(--iom-blue-dark);
+  --bs-btn-focus-shadow-rgb: 0, 51, 160;
+}
+main .btn-outline-primary {
+  --bs-btn-color: var(--iom-blue); --bs-btn-border-color: #b9c7e6;
+  --bs-btn-hover-bg: var(--iom-blue); --bs-btn-hover-border-color: var(--iom-blue);
+  --bs-btn-active-bg: var(--iom-blue-dark); --bs-btn-active-border-color: var(--iom-blue-dark);
+  --bs-btn-focus-shadow-rgb: 0, 51, 160;
+}
+.form-label { font-size: .82rem; font-weight: 500; color: var(--muted); margin-bottom: .3rem; }
+main .form-control, main .form-select { border-color: var(--line); border-radius: .55rem; padding: .55rem .8rem; }
+main .form-control:focus, main .form-select:focus { border-color: var(--iom-blue); box-shadow: 0 0 0 .2rem rgba(0, 51, 160, .18); }
+
+.page-title { font-size: 1.65rem; font-weight: 600; letter-spacing: -.01em; }
+.muted { font-size: .8rem; color: var(--muted); }
+
+/* Panels */
+.panel { background: #fff; border: 1px solid var(--line); border-radius: 1rem; box-shadow: 0 1px 2px rgba(11, 31, 77, .04); overflow: hidden; }
+.panel-pad { padding: 1.25rem 1.4rem; }
+.panel-head {
+  padding: .85rem 1.25rem; border-bottom: 1px solid var(--line); min-height: 3.4rem;
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap;
+}
+.panel-title { font-size: 1.02rem; font-weight: 600; margin: 0; }
+.panel-note { padding: .7rem 1.25rem; font-size: .8rem; color: var(--muted); background: #fafbfe; border-top: 1px solid var(--line); }
+
+/* KPI cards */
+.kpi { padding: 1.15rem 1.25rem; position: relative; height: 100%; }
+.kpi::before { content: ""; position: absolute; left: 0; top: 1rem; bottom: 1rem; width: 4px; border-radius: 0 4px 4px 0; background: var(--iom-blue); }
+.kpi.tone-amber::before { background: #f2a900; }
+.kpi.tone-green::before { background: var(--tone-green); }
+.kpi.tone-red::before { background: var(--tone-red); }
+.kpi-label { font-size: .85rem; color: var(--muted); }
+.kpi-value { font-size: 1.9rem; font-weight: 600; line-height: 1.15; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.kpi-value small { font-size: 1rem; font-weight: 500; color: var(--muted); }
+.kpi-sub { font-size: .78rem; color: var(--muted); margin-top: .15rem; }
+
+/* Report cards */
+.report-card { padding: 1.15rem 1.25rem; height: 100%; display: flex; flex-direction: column; }
+.report-card h3 { font-size: 1rem; font-weight: 600; margin: 0 0 .25rem; }
+.report-card p { font-size: .85rem; color: var(--muted); margin: 0 0 1rem; flex: 1; }
+.report-card .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.report-tag { display: inline-block; font-size: .7rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin-bottom: .5rem; }
+.report-tag.t-ops { color: var(--tone-amber); } .report-tag.t-mgmt { color: var(--iom-blue); } .report-tag.t-donor { color: var(--tone-green); }
+
+/* Status bar */
+.stack { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: #e6ecf6; }
+.stack span { display: block; height: 100%; }
+.stack-legend { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; margin-top: .75rem; font-size: .8rem; color: var(--muted); }
+.stack-legend i { display: inline-block; width: .65rem; height: .65rem; border-radius: 3px; margin-right: .35rem; vertical-align: -1px; }
+.stack-legend b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Progress bars */
+.bar-row { display: grid; grid-template-columns: minmax(120px, 34%) 1fr auto; align-items: center; gap: .75rem; padding: .4rem 0; font-size: .85rem; }
+.bar-row .track { height: 8px; border-radius: 999px; background: #e6ecf6; overflow: hidden; }
+.bar-row .fill { height: 100%; border-radius: 999px; background: var(--iom-blue); }
+.bar-row .val { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar-row .val small { font-weight: 400; color: var(--muted); }
+
+/* Tables */
+.data-table { --bs-table-bg: transparent; width: 100%; margin: 0; }
+.data-table th, .data-table td { text-align: left; vertical-align: middle; padding: .7rem 1.25rem; border-color: var(--line); font-size: .88rem; line-height: 1.4; }
+.data-table thead th {
+  background: var(--mist); color: var(--muted); font-size: .74rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; border-bottom: 1px solid var(--line);
+}
+.data-table tbody tr:hover > * { background: #f6f8fd; }
+.data-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.data-table thead th.num { text-align: right; }
+.data-table .center { text-align: center; }
+.data-table .empty { text-align: center !important; color: var(--muted); padding: 1.75rem 1rem; }
+.cell-bar { display: flex; align-items: center; gap: .6rem; justify-content: flex-end; }
+.cell-bar .track { width: 70px; height: 6px; border-radius: 999px; background: #e6ecf6; overflow: hidden; }
+.cell-bar .fill { height: 100%; background: var(--iom-blue); border-radius: 999px; }
+
+/* Pills */
+.pill {
+  --tone: var(--tone-grey); --tone-bg: var(--tone-grey-bg);
+  display: inline-flex; align-items: center; gap: .4rem; background: var(--tone-bg); color: var(--tone);
+  font-size: .78rem; font-weight: 500; line-height: 1; padding: .3rem .65rem; border-radius: 999px; white-space: nowrap;
+}
+.pill::before { content: ""; width: .42rem; height: .42rem; border-radius: 50%; background: var(--tone); flex: none; }
+.pill[data-tone="blue"]  { --tone: var(--tone-blue);  --tone-bg: var(--tone-blue-bg); }
+.pill[data-tone="green"] { --tone: var(--tone-green); --tone-bg: var(--tone-green-bg); }
+.pill[data-tone="amber"] { --tone: var(--tone-amber); --tone-bg: var(--tone-amber-bg); }
+.pill[data-tone="red"]   { --tone: var(--tone-red);   --tone-bg: var(--tone-red-bg); }
+
+/* Trend chart */
+#trend-chart svg { display: block; width: 100%; height: auto; }
+.chart-legend { display: flex; gap: 1rem; font-size: .78rem; color: var(--muted); }
+.chart-legend i { display: inline-block; width: .65rem; height: .65rem; border-radius: 3px; margin-right: .35rem; vertical-align: -1px; }
+</style>
+<link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
 </head><body>
-<nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand" href="{% url 'housing:house-list' %}">HRMIS | Reports & Analytics</a><a class="btn btn-sm btn-outline-light" href="{% url 'housing:house-list' %}">Housing registry</a></div></nav>
-<main class="container py-4"><div class="mb-3"><h2>Programme reporting centre</h2><p class="text-secondary">Generate periodic programme, Country Office management and donor reports from approved HRMIS records.</p></div>
-<div class="card shadow-sm mb-4"><div class="card-body"><form method="get" class="row g-3 align-items-end"><div class="col-md-3"><label class="form-label">Reporting period</label><select class="form-select" name="period" id="period"><option value="weekly" {% if period == 'weekly' %}selected{% endif %}>Weekly (last 7 days)</option><option value="monthly" {% if period == 'monthly' %}selected{% endif %}>Monthly (month to date)</option><option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom dates</option></select></div><div class="col-md-2"><label class="form-label">Start date</label><input class="form-control" type="date" name="start" value="{{ start|date:'Y-m-d' }}"></div><div class="col-md-2"><label class="form-label">End date</label><input class="form-control" type="date" name="end" value="{{ end|date:'Y-m-d' }}"></div><div class="col-md-3"><label class="form-label">Geographic coverage</label><select class="form-select" name="island"><option value="">All islands</option>{% for island in islands %}<option value="{{ island.pk }}" {% if island_id == island.pk|stringformat:'s' %}selected{% endif %}>{{ island.name }}</option>{% endfor %}</select></div><div class="col-md-2"><button class="btn btn-primary w-100">Apply filters</button></div></form><div class="small text-secondary mt-2">Current period: {{ start|date:'d M Y' }} – {{ end|date:'d M Y' }}</div></div></div>
-<div class="row g-3 mb-4"><div class="col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-secondary small">Registered houses</div><div class="metric">{{ total_houses }} / {{ target_houses }}</div><div class="small text-secondary">{{ coverage|floatformat:1 }}% of target</div></div></div></div><div class="col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-secondary small">Programme progress</div><div class="metric">{{ programme_progress|floatformat:2 }}%</div><div class="small text-secondary">Against 700-house target</div></div></div></div><div class="col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-secondary small">Approved updates in period</div><div class="metric">{{ approved_updates }}</div><div class="small text-secondary">Pending: {{ pending_updates }}</div></div></div></div><div class="col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-secondary small">Open / overdue defects</div><div class="metric">{{ defects_open }} / {{ defects_overdue }}</div><div class="small text-secondary">New this period: {{ defects_new }}</div></div></div></div></div>
-<div class="card shadow-sm mb-4"><div class="card-header bg-white fw-semibold">Generate PDF report</div><div class="card-body"><p class="text-secondary">Choose the intended audience. The reporting period and geographic filters above will be retained.</p><div class="d-flex flex-wrap gap-2">{% for audience,label in audiences %}{% endfor %}<a class="btn btn-primary" href="{% url 'reports:pdf' %}?period={{ period }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&island={{ island_id }}&audience=programme">Weekly / operational PDF</a><a class="btn btn-outline-primary" href="{% url 'reports:pdf' %}?period={{ period }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&island={{ island_id }}&audience=management">Country Office PDF</a><a class="btn btn-outline-success" href="{% url 'reports:pdf' %}?period={{ period }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&island={{ island_id }}&audience=donor">Donor PDF</a></div></div></div>
-<div class="row g-3"><div class="col-lg-6"><div class="card shadow-sm"><div class="card-header bg-white fw-semibold">House status</div><div class="card-body"><table class="table table-sm mb-0"><tbody><tr><td>Registered</td><td class="text-end fw-semibold">{{ status_counts.REGISTERED }}</td></tr><tr><td>Under reconstruction</td><td class="text-end fw-semibold">{{ status_counts.IN_PROGRESS }}</td></tr><tr><td>On hold</td><td class="text-end fw-semibold">{{ status_counts.ON_HOLD }}</td></tr><tr><td>Completed</td><td class="text-end fw-semibold">{{ status_counts.COMPLETED }}</td></tr><tr><td>Handed over</td><td class="text-end fw-semibold">{{ status_counts.HANDED_OVER }}</td></tr><tr><td>Average progress among registered houses</td><td class="text-end fw-semibold">{{ average_progress|floatformat:2 }}%</td></tr></tbody></table></div></div></div><div class="col-lg-6"><div class="card shadow-sm"><div class="card-header bg-white fw-semibold">Inspections and defects in reporting period</div><div class="card-body"><div class="row text-center"><div class="col-4"><div class="metric">{{ inspections_total }}</div><div class="small text-secondary">Inspections</div></div><div class="col-4"><div class="metric">{{ inspections_pending }}</div><div class="small text-secondary">Pending review</div></div><div class="col-4"><div class="metric">{{ defects_closed_period }}</div><div class="small text-secondary">Defects closed</div></div></div><hr><div>Inspection outcomes: {{ inspections_pass }} passed · {{ inspections_conditional }} conditional · {{ inspections_fail }} failed</div></div></div></div></div>
-<div class="card shadow-sm mt-3"><div class="card-header bg-white fw-semibold">Reporting-period comparison</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Indicator</th><th>Previous comparable period</th><th>Selected period</th></tr></thead><tbody><tr><td>Approved progress updates</td><td>{{ previous_approved_updates }}</td><td>{{ approved_updates }}</td></tr><tr><td>Pending reviews</td><td>{{ previous_pending_updates }}</td><td>{{ pending_updates }}</td></tr><tr><td>Changes requested</td><td>{{ previous_changes_requested }}</td><td>{{ changes_requested }}</td></tr></tbody></table></div><div class="card-body small text-secondary">The previous period is an immediately preceding period of equal length. These are activity counts, not cumulative house progress.</div></div>
-<div class="card shadow-sm mt-3"><div class="card-header bg-white fw-semibold">Geographic coverage</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Island</th><th>Registered</th><th>Under reconstruction</th><th>Completed / handed over</th></tr></thead><tbody>{% for row in island_rows %}<tr><td>{{ row.name }}</td><td>{{ row.houses }}</td><td>{{ row.in_progress }}</td><td>{{ row.completed }}</td></tr>{% empty %}<tr><td colspan="4" class="text-secondary">No geographic records.</td></tr>{% endfor %}</tbody></table></div></div>
-</main></body></html>
+<nav class="navbar navbar-dark bg-primary"><div class="container-fluid px-3 px-lg-4">
+<a class="navbar-brand fw-semibold" href="{% url 'housing:house-list' %}"><span class="hrmis-navbar-brand">
+<img class="hrmis-navbar-logo" src="/static/hrmis/images/iom-logo-hd.jpg" alt="International Organization for Migration (IOM)">
+<span class="hrmis-navbar-title">Housing Reconstruction Information Management System <span class="hrmis-navbar-acronym">(HRMIS)</span></span>
+</span></a>
+<div class="d-flex align-items-center flex-wrap gap-2">
+<a class="btn btn-sm btn-outline-light" href="{% url 'dashboard:programme-dashboard' %}">Programme dashboard</a>
+<a class="btn btn-sm btn-outline-light" href="{% url 'housing:house-list' %}">Housing registry</a>
+</div></div></nav>
+
+<main class="container py-4 py-lg-5">
+
+  <div class="mb-4">
+    <h1 class="page-title mb-1">Programme reporting centre</h1>
+    <p class="text-secondary mb-0">Generate periodic programme, Country Office management and donor reports from approved HRMIS records.</p>
+  </div>
+
+  <!-- Filters -->
+  <section class="panel panel-pad mb-4">
+    <form method="get" id="report-filters" class="row g-3 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label" for="period">Reporting period</label>
+        <select class="form-select" name="period" id="period">
+          <option value="weekly" {% if period == 'weekly' %}selected{% endif %}>Weekly (last 7 days)</option>
+          <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>Monthly (month to date)</option>
+          <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom dates</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label" for="start">Start date</label>
+        <input class="form-control" type="date" name="start" id="start" value="{{ start|date:'Y-m-d' }}">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label" for="end">End date</label>
+        <input class="form-control" type="date" name="end" id="end" value="{{ end|date:'Y-m-d' }}">
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label" for="island">Geographic coverage</label>
+        <select class="form-select" name="island" id="island">
+          <option value="">All islands</option>
+          {% for island in islands %}<option value="{{ island.pk }}" {% if island_id == island.pk|stringformat:'s' %}selected{% endif %}>{{ island.name|title }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-2"><button class="btn btn-primary w-100">Apply filters</button></div>
+    </form>
+    <div class="muted mt-3">Current period: <strong>{{ start|date:'d M Y' }} – {{ end|date:'d M Y' }}</strong>{% if island_name %} · {{ island_name }}{% else %} · All islands{% endif %} <span id="period-hint"></span></div>
+  </section>
+
+  <!-- KPIs -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="panel kpi"><div class="kpi-label">Registered houses</div><div class="kpi-value">{{ total_houses }} <small>/ {{ target_houses }}</small></div><div class="kpi-sub">{{ coverage|floatformat:1 }}% of target</div></div></div>
+    <div class="col-6 col-lg-3"><div class="panel kpi tone-green"><div class="kpi-label">Programme progress</div><div class="kpi-value">{{ programme_progress|floatformat:2 }}%</div><div class="kpi-sub">Against 700-house target</div></div></div>
+    <div class="col-6 col-lg-3"><div class="panel kpi tone-amber"><div class="kpi-label">Approved updates in period</div><div class="kpi-value">{{ approved_updates }}</div><div class="kpi-sub">Pending: {{ pending_updates }} · Previous: {{ previous_approved_updates }}</div></div></div>
+    <div class="col-6 col-lg-3"><div class="panel kpi tone-red"><div class="kpi-label">Open / overdue defects</div><div class="kpi-value">{{ defects_open }} <small>/ {{ defects_overdue }}</small></div><div class="kpi-sub">New this period: {{ defects_new }}</div></div></div>
+  </div>
+
+  <!-- Generate PDF -->
+  <section class="mb-4" aria-labelledby="gen-title">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+      <div>
+        <h2 class="panel-title" id="gen-title">Generate PDF report</h2>
+        <div class="muted">Choose the intended audience. The reporting period and geographic filters above are applied.</div>
+      </div>
+    </div>
+    <div class="row g-3">
+      <div class="col-12 col-lg-4"><div class="panel report-card">
+        <span class="report-tag t-ops">Weekly</span>
+        <h3>Operational report</h3>
+        <p>Follow-up list by priority, reporting activity, inspection and defect workload, and engineer workload for the programme team.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="{% url 'reports:pdf' %}?period={{ period }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&island={{ island_id }}&audience=programme">Download PDF</a>
+          <a class="btn btn-outline-primary" target="_blank" rel="noopener" href="{% url 'reports:pdf' %}?period={{ period }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&island={{ island_id }}&audience=programme&inline=1">Preview</a>
+        </div>
+      </div></div>
+      <div class="col-12 col-lg-4"><div class="panel report-card">
+        <span class="report-tag t-mgmt">Management</span>
+        <h3>Country Office report</h3>
+        <p>Executive summary with key messages, progress against target, geographic coverage, quality risks and items needing attention.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="{% url 'reports:pdf' %}?period={{ period }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&island={{ island_id }}&audience=management">Download PDF</a>
+          <a class="btn btn-outline-primary" target="_blank" rel="noopener" href="{% url 'reports:pdf' %}?period={{ period }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&island={{ island_id }}&audience=management&inline=1">Preview</a>
+        </div>
+      </div></div>
+      <div class="col-12 col-lg-4"><div class="panel report-card">
+        <span class="report-tag t-donor">Donor</span>
+        <h3>Donor progress report</h3>
+        <p>Results at a glance, progress by milestone and island, quality assurance and mitigation. No house-level or staff details.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="{% url 'reports:pdf' %}?period={{ period }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&island={{ island_id }}&audience=donor">Download PDF</a>
+          <a class="btn btn-outline-primary" target="_blank" rel="noopener" href="{% url 'reports:pdf' %}?period={{ period }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&island={{ island_id }}&audience=donor&inline=1">Preview</a>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- Status + inspections -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-lg-6"><section class="panel h-100">
+      <div class="panel-head"><h2 class="panel-title">House status</h2><span class="muted">{{ total_houses }} houses</span></div>
+      <div class="panel-pad">
+        <div class="stack" role="img" aria-label="House status distribution">
+          <span style="width:{% widthratio status_counts.REGISTERED total_houses 100 %}%;background:#0033a0"></span>
+          <span style="width:{% widthratio status_counts.IN_PROGRESS total_houses 100 %}%;background:#d18a00"></span>
+          <span style="width:{% widthratio status_counts.COMPLETED total_houses 100 %}%;background:#16834a"></span>
+          <span style="width:{% widthratio status_counts.HANDED_OVER total_houses 100 %}%;background:#0f6b3d"></span>
+          <span style="width:{% widthratio status_counts.ON_HOLD total_houses 100 %}%;background:#c43d3d"></span>
+        </div>
+        <div class="stack-legend">
+          <span><i style="background:#0033a0"></i>Registered <b>{{ status_counts.REGISTERED }}</b></span>
+          <span><i style="background:#d18a00"></i>Under reconstruction <b>{{ status_counts.IN_PROGRESS }}</b></span>
+          <span><i style="background:#16834a"></i>Completed <b>{{ status_counts.COMPLETED }}</b></span>
+          <span><i style="background:#0f6b3d"></i>Handed over <b>{{ status_counts.HANDED_OVER }}</b></span>
+          <span><i style="background:#c43d3d"></i>On hold <b>{{ status_counts.ON_HOLD }}</b></span>
+        </div>
+        <div class="d-flex justify-content-between mt-3 pt-3 border-top" style="border-color:var(--line)!important"><span class="text-secondary">Average progress among registered houses</span><strong>{{ average_progress|floatformat:2 }}%</strong></div>
+      </div>
+    </section></div>
+
+    <div class="col-12 col-lg-6"><section class="panel h-100">
+      <div class="panel-head"><h2 class="panel-title">Inspections and defects in period</h2></div>
+      <div class="panel-pad">
+        <div class="row text-center g-2 mb-3">
+          <div class="col-4"><div class="kpi-value">{{ inspections_total }}</div><div class="muted">Inspections</div></div>
+          <div class="col-4"><div class="kpi-value">{{ inspections_pending }}</div><div class="muted">Pending review</div></div>
+          <div class="col-4"><div class="kpi-value">{{ defects_closed_period }}</div><div class="muted">Defects closed</div></div>
+        </div>
+        <div class="stack" role="img" aria-label="Inspection outcomes">
+          <span style="width:{% widthratio inspections_pass inspections_total 100 %}%;background:#16834a"></span>
+          <span style="width:{% widthratio inspections_conditional inspections_total 100 %}%;background:#d18a00"></span>
+          <span style="width:{% widthratio inspections_fail inspections_total 100 %}%;background:#c43d3d"></span>
+        </div>
+        <div class="stack-legend">
+          <span><i style="background:#16834a"></i>Passed <b>{{ inspections_pass }}</b></span>
+          <span><i style="background:#d18a00"></i>Conditional <b>{{ inspections_conditional }}</b></span>
+          <span><i style="background:#c43d3d"></i>Failed <b>{{ inspections_fail }}</b></span>
+        </div>
+      </div>
+    </section></div>
+  </div>
+
+  <!-- Activity trend + comparison -->
+  <section class="panel mb-4">
+    <div class="panel-head">
+      <h2 class="panel-title">Progress submissions over the period</h2>
+      <div class="chart-legend"><span><i style="background:#9fb3e0"></i>Submitted</span><span><i style="background:#003499"></i>Approved</span></div>
+    </div>
+    <div class="panel-pad pb-2"><div id="trend-chart" aria-label="Submitted and approved progress updates"></div></div>
+    <div class="table-responsive">
+      <table class="table data-table" id="compare-table">
+        <thead><tr><th>Indicator</th><th class="num">Previous comparable period</th><th class="num">Selected period</th><th class="center">Change</th></tr></thead>
+        <tbody>
+          <tr data-good="up" data-prev="{{ previous_approved_updates }}" data-cur="{{ approved_updates }}"><td>Approved progress updates</td><td class="num">{{ previous_approved_updates }}</td><td class="num">{{ approved_updates }}</td><td class="center"><span class="pill delta">–</span></td></tr>
+          <tr data-good="down" data-prev="{{ previous_pending_updates }}" data-cur="{{ pending_updates }}"><td>Pending reviews</td><td class="num">{{ previous_pending_updates }}</td><td class="num">{{ pending_updates }}</td><td class="center"><span class="pill delta">–</span></td></tr>
+          <tr data-good="down" data-prev="{{ previous_changes_requested }}" data-cur="{{ changes_requested }}"><td>Changes requested</td><td class="num">{{ previous_changes_requested }}</td><td class="num">{{ changes_requested }}</td><td class="center"><span class="pill delta">–</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel-note">The previous period is an immediately preceding period of equal length. These are activity counts, not cumulative house progress.</div>
+  </section>
+
+  <!-- Milestones + islands -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-xl-6"><section class="panel h-100">
+      <div class="panel-head"><h2 class="panel-title">Progress by milestone</h2><span class="muted">average approved completion</span></div>
+      <div class="panel-pad">
+        {% for m in milestone_rows %}
+          <div class="bar-row">
+            <span>{{ forloop.counter }}. {{ m.name }}</span>
+            <div class="track"><div class="fill" style="width:{{ m.average|stringformat:'.1f' }}%"></div></div>
+            <span class="val">{{ m.average|stringformat:'.1f' }}% <small>· {{ m.updated_houses }}/{{ total_houses }}</small></span>
+          </div>
+        {% empty %}<div class="text-secondary">No active construction milestones are configured.</div>{% endfor %}
+      </div>
+    </section></div>
+
+    <div class="col-12 col-xl-6"><section class="panel h-100">
+      <div class="panel-head"><h2 class="panel-title">Geographic coverage</h2></div>
+      <div class="table-responsive">
+        <table class="table data-table">
+          <thead><tr><th>Island</th><th class="num">Registered</th><th class="num">Under reconstruction</th><th class="num">Completed / handed over</th><th class="num">Avg. progress</th></tr></thead>
+          <tbody>{% for row in island_rows %}<tr><td>{{ row.name }}</td><td class="num">{{ row.houses }}</td><td class="num">{{ row.in_progress }}</td><td class="num">{{ row.completed }}</td><td class="num"><div class="cell-bar"><div class="track"><div class="fill" style="width:{{ row.average_progress|stringformat:'.1f' }}%"></div></div>{{ row.average_progress|stringformat:'.1f' }}%</div></td></tr>{% empty %}<tr><td colspan="5" class="empty">No geographic records.</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    </section></div>
+  </div>
+
+  <!-- Follow-up -->
+  <section class="panel mb-4">
+    <div class="panel-head"><h2 class="panel-title">Houses requiring follow-up</h2><span class="muted">{{ exceptions|length }} item{{ exceptions|length|pluralize }}</span></div>
+    <div class="table-responsive">
+      <table class="table data-table">
+        <thead><tr><th class="center">Priority</th><th>Issue</th><th class="num">Houses</th><th>Suggested follow-up</th></tr></thead>
+        <tbody>{% for s in exception_summary %}<tr><td class="center"><span class="pill" data-tone="{% if s.priority == 'HIGH' %}red{% else %}amber{% endif %}">{% if s.priority == 'HIGH' %}High{% else %}Medium{% endif %}</span></td><td>{{ s.issue }}</td><td class="num">{{ s.count }}</td><td>{{ s.action }}</td></tr>{% empty %}<tr><td colspan="4" class="empty">No houses are currently flagged for follow-up.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    {% if exceptions %}
+      <div class="panel-head" style="border-top:1px solid var(--line)"><h3 class="panel-title" style="font-size:.95rem">Highest-priority houses</h3><span class="muted">first 15 shown</span></div>
+      <div class="table-responsive">
+        <table class="table data-table">
+          <thead><tr><th class="center">Priority</th><th>House ID</th><th>Issue</th><th>Assigned engineer</th></tr></thead>
+          <tbody>{% for e in exceptions|slice:":15" %}<tr><td class="center"><span class="pill" data-tone="{% if e.priority == 'HIGH' %}red{% else %}amber{% endif %}">{% if e.priority == 'HIGH' %}High{% else %}Medium{% endif %}</span></td><td><strong>{{ e.house_id }}</strong></td><td>{{ e.issue }}</td><td>{{ e.engineer }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Engineers -->
+  <section class="panel">
+    <div class="panel-head"><h2 class="panel-title">Engineer workload</h2><span class="muted">activity in the selected period</span></div>
+    <div class="table-responsive">
+      <table class="table data-table">
+        <thead><tr><th>Engineer</th><th class="num">Houses</th><th class="num">Avg. progress</th><th class="num">Submitted</th><th class="num">Approved</th><th class="num">Pending</th><th class="num">Changes</th></tr></thead>
+        <tbody>{% for r in engineer_rows %}<tr><td>{{ r.name }}</td><td class="num">{{ r.houses }}</td><td class="num">{{ r.average_progress|stringformat:'.1f' }}%</td><td class="num">{{ r.submissions }}</td><td class="num">{{ r.approved }}</td><td class="num">{{ r.pending }}</td><td class="num">{{ r.changes }}</td></tr>{% empty %}<tr><td colspan="7" class="empty">No engineer assignments in this selection.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+{{ trend|json_script:"trend-data" }}
+<script>
+(function () {
+  // ---- Reporting period: editing a date switches to "Custom dates"; picking Weekly/Monthly is explicit.
+  var period = document.getElementById('period');
+  var start = document.getElementById('start');
+  var end = document.getElementById('end');
+  var hint = document.getElementById('period-hint');
+  function markCustom() {
+    if (period.value !== 'custom') period.value = 'custom';
+    if (hint) hint.textContent = '';
+  }
+  start.addEventListener('input', markCustom);
+  end.addEventListener('input', markCustom);
+  period.addEventListener('change', function () {
+    var custom = period.value === 'custom';
+    start.readOnly = end.readOnly = !custom;
+    if (custom) { start.focus(); }
+  });
+  start.readOnly = end.readOnly = (period.value !== 'custom');
+  [start, end].forEach(function (el) {
+    el.addEventListener('mousedown', function () { if (period.value !== 'custom') { markCustom(); start.readOnly = end.readOnly = false; } });
+  });
+
+  // ---- Change column (same logic as the PDF reports)
+  document.querySelectorAll('#compare-table tbody tr').forEach(function (tr) {
+    var cur = parseFloat(tr.dataset.cur) || 0, prev = parseFloat(tr.dataset.prev) || 0, good = tr.dataset.good;
+    var pill = tr.querySelector('.delta'), text, up;
+    if (cur === prev) { text = 'no change'; pill.dataset.tone = 'grey'; }
+    else {
+      if (prev === 0) { text = '+' + cur + ' (new)'; up = true; }
+      else { var pct = (cur - prev) / prev * 100; text = (pct > 0 ? '+' : '') + Math.round(pct) + '%'; up = pct > 0; }
+      pill.dataset.tone = (good === 'up' ? up : !up) ? 'green' : 'amber';
+    }
+    pill.textContent = text;
+  });
+
+  // ---- Trend chart (inline SVG, no library)
+  var t = JSON.parse(document.getElementById('trend-data').textContent || '{}');
+  var holder = document.getElementById('trend-chart');
+  var labels = t.labels || [], sub = t.submitted || [], app = t.approved || [];
+  var any = sub.concat(app).some(function (v) { return v > 0; });
+  if (!labels.length || !any) { holder.innerHTML = '<div class="text-secondary py-4 text-center">No progress submissions in this period.</div>'; return; }
+  var W = 760, H = 190, L = 34, B = 26, T = 8, R = 6, pw = W - L - R, ph = H - B - T;
+  var maxV = Math.max.apply(null, sub.concat(app).concat([1])), step = Math.max(1, Math.ceil(maxV / 4)), top = step * 4;
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img">';
+  for (var k = 0; k <= 4; k++) {
+    var y = T + ph - ph * k / 4;
+    s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '" stroke="' + (k ? '#e6ecf6' : '#b9c7e6') + '"/>';
+    s += '<text x="' + (L - 6) + '" y="' + (y + 3) + '" text-anchor="end" font-size="10" fill="#5b6b8c">' + (step * k) + '</text>';
+  }
+  var n = labels.length, slot = pw / n, gw = slot * 0.72, bw = gw / 2, every = Math.max(1, Math.ceil(n / 12));
+  labels.forEach(function (label, i) {
+    var gx = L + i * slot + (slot - gw) / 2;
+    [[sub[i] || 0, '#9fb3e0'], [app[i] || 0, '#003499']].forEach(function (pair, j) {
+      var h = ph * pair[0] / top;
+      if (h > 0) s += '<rect x="' + (gx + j * bw) + '" y="' + (T + ph - h) + '" width="' + (bw * 0.92) + '" height="' + h + '" rx="2" fill="' + pair[1] + '"><title>' + label + ': ' + pair[0] + (j ? ' approved' : ' submitted') + '</title></rect>';
+    });
+    if (i % every === 0) s += '<text x="' + (L + i * slot + slot / 2) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="#5b6b8c">' + label + '</text>';
+  });
+  holder.innerHTML = s + '</svg>';
+})();
+</script>
+</body></html>

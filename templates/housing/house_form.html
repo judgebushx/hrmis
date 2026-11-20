@@ -1,3 +1,142 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ page_title }} | HRMIS</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"><link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
-</head><body class="bg-light"><nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand" href="{% url 'housing:house-list' %}"><img class="iom-navbar-logo" src="/static/hrmis/images/iom-logo.png" alt="IOM – UN Migration"><span class="brand-caption">Housing Reconstruction Monitoring</span></a></div></nav><main class="container py-4"><a href="{% url 'housing:house-list' %}">← Back to housing register</a><h2 class="mt-3">{{ page_title }}</h2><p class="text-secondary">Fields marked with * are required. Location records must be configured before registering houses.</p><form method="post" class="card border-0 shadow-sm"><div class="card-body p-4">{% csrf_token %}{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-{% for field in form %}<div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}</div><div class="card-footer bg-white d-flex justify-content-end gap-2"><a class="btn btn-outline-secondary" href="{% url 'housing:house-list' %}">Cancel</a><button class="btn btn-primary">Save house</button></div></form></main></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ page_title }} | HRMIS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+/* The navigation bar is untouched. Everything below is scoped to <main> (plus the page background). */
+body.bg-light { background-color: #f4f6fb !important; }
+
+main {
+  --ink: #0b1f4d;
+  --muted: #5b6b8c;
+  --iom-blue: #0033a0;
+  --iom-blue-dark: #00277d;
+  --mist: #eaf0fa;
+  --line: #dde5f3;
+  --danger: #c43d3d;
+
+  --bs-body-font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bs-body-color: var(--ink);
+  --bs-link-color: var(--iom-blue);
+  --bs-link-hover-color: var(--iom-blue-dark);
+  --bs-secondary-color: var(--muted);
+  font-family: var(--bs-body-font-family);
+  color: var(--ink);
+}
+
+.form-shell { max-width: 920px; margin: 0 auto; }
+
+/* Header */
+.back-link { display: inline-flex; align-items: center; gap: .35rem; font-size: .88rem; font-weight: 500; text-decoration: none; }
+.back-link:hover { text-decoration: underline; }
+.page-title { font-size: 1.65rem; font-weight: 600; letter-spacing: -.01em; }
+
+/* Panel */
+.panel { background: #fff; border: 1px solid var(--line); border-radius: 1rem; box-shadow: 0 1px 2px rgba(11, 31, 77, .04); overflow: hidden; }
+.panel-body { padding: 1.6rem 1.75rem; }
+.panel-foot {
+  padding: 1rem 1.75rem; border-top: 1px solid var(--line); background: #fafbfe;
+  display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .6rem;
+}
+
+/* Field grid: two columns on desktop, text areas and checkboxes span the full width */
+.field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 1.5rem; }
+.field { min-width: 0; }
+.field.field-wide { grid-column: 1 / -1; }
+@media (max-width: 767.98px) { .field-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.field-label { display: block; font-size: .82rem; font-weight: 500; color: var(--muted); margin-bottom: .35rem; }
+.field-label .req { color: var(--danger); margin-left: .15rem; }
+
+/* Inputs are styled from the container, so they look right whatever classes the widgets carry */
+.house-form input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]),
+.house-form select,
+.house-form textarea {
+  display: block; width: 100%; border: 1px solid var(--line); border-radius: .55rem;
+  padding: .6rem .85rem; font: inherit; color: var(--ink); background-color: #fff;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.house-form select { padding-right: 2rem; }
+.house-form textarea { min-height: 6rem; resize: vertical; }
+.house-form input[type=file] { display: block; width: 100%; font: inherit; color: var(--muted); }
+.house-form input:focus, .house-form select:focus, .house-form textarea:focus {
+  outline: 0; border-color: var(--iom-blue); box-shadow: 0 0 0 .2rem rgba(0, 51, 160, .18);
+}
+.house-form ::placeholder { color: #9aa7c2; }
+
+/* Checkboxes */
+.check-row { display: flex; align-items: center; gap: .6rem; padding: .7rem .9rem; border: 1px solid var(--line); border-radius: .55rem; background: #fafbfe; }
+.check-row input[type=checkbox] { width: 1.1rem; height: 1.1rem; accent-color: var(--iom-blue); flex: none; }
+.check-row label { margin: 0; font-weight: 500; }
+
+/* Help and errors */
+.field-help { font-size: .78rem; color: var(--muted); margin-top: .35rem; }
+.field-error { font-size: .8rem; color: var(--danger); margin-top: .35rem; }
+.field.has-error input:not([type=checkbox]):not([type=radio]):not([type=hidden]),
+.field.has-error select,
+.field.has-error textarea { border-color: var(--danger); }
+.field.has-error input:focus, .field.has-error select:focus, .field.has-error textarea:focus { box-shadow: 0 0 0 .2rem rgba(196, 61, 61, .18); }
+
+main .alert { border-radius: .75rem; border: 0; }
+
+/* Buttons */
+main .btn { border-radius: .55rem; font-weight: 500; padding: .55rem 1.2rem; }
+main .btn-primary {
+  --bs-btn-bg: var(--iom-blue); --bs-btn-border-color: var(--iom-blue);
+  --bs-btn-hover-bg: var(--iom-blue-dark); --bs-btn-hover-border-color: var(--iom-blue-dark);
+  --bs-btn-active-bg: var(--iom-blue-dark); --bs-btn-active-border-color: var(--iom-blue-dark);
+  --bs-btn-focus-shadow-rgb: 0, 51, 160;
+}
+main .btn-outline-secondary {
+  --bs-btn-color: var(--muted); --bs-btn-border-color: var(--line);
+  --bs-btn-hover-bg: var(--mist); --bs-btn-hover-color: var(--ink); --bs-btn-hover-border-color: var(--line);
+}
+</style><link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
+</head><body class="bg-light"><nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand" href="{% url 'housing:house-list' %}"><span class="hrmis-navbar-brand">
+  <img class="hrmis-navbar-logo" src="/static/hrmis/images/iom-logo-hd.jpg" alt="International Organization for Migration (IOM)">
+  <span class="hrmis-navbar-title">Housing Reconstruction Information Management System <span class="hrmis-navbar-acronym">(HRMIS)</span></span>
+</span></a></div></nav>
+
+<main class="container py-4 py-lg-5">
+  <div class="form-shell">
+
+    <a class="back-link" href="{% url 'housing:house-list' %}">← Back to housing register</a>
+    <h1 class="page-title mt-3 mb-1">{{ page_title }}</h1>
+    <p class="text-secondary mb-4">Fields marked with <span style="color:var(--danger)">*</span> are required. Location records must be configured before registering houses.</p>
+
+    <form method="post" class="panel house-form">
+      <div class="panel-body">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div class="field-grid">
+          {% for field in form %}
+            {% if field.is_hidden %}
+              {{ field }}
+            {% elif field.widget_type == 'checkbox' %}
+              <div class="field field-wide{% if field.errors %} has-error{% endif %}">
+                <div class="check-row">{{ field }}<label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="req" style="color:var(--danger)">*</span>{% endif %}</label></div>
+                {% if field.help_text %}<div class="field-help">{{ field.help_text }}</div>{% endif %}
+                {% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+              </div>
+            {% else %}
+              <div class="field{% if field.widget_type == 'textarea' %} field-wide{% endif %}{% if field.errors %} has-error{% endif %}">
+                <label class="field-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="req">*</span>{% endif %}</label>
+                {{ field }}
+                {% if field.help_text %}<div class="field-help">{{ field.help_text }}</div>{% endif %}
+                {% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="panel-foot">
+        <a class="btn btn-outline-secondary" href="{% url 'housing:house-list' %}">Cancel</a>
+        <button class="btn btn-primary">Save house</button>
+      </div>
+    </form>
+
+  </div>
+</main></body></html>

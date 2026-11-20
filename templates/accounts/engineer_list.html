@@ -1,11 +1,201 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Engineer Management | HRMIS</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"><link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Engineer Management | HRMIS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+/* The navigation bar is untouched. Everything below is scoped to <main> (plus the page background). */
+body.bg-light { background-color: #f4f6fb !important; }
+
+main {
+  --ink: #0b1f4d;
+  --muted: #5b6b8c;
+  --iom-blue: #0033a0;
+  --iom-blue-dark: #00277d;
+  --mist: #eaf0fa;
+  --line: #dde5f3;
+
+  --tone-green: #16834a; --tone-green-bg: #e4f4ea;
+  --tone-grey: #5b6b8c;  --tone-grey-bg: #eef1f6;
+
+  --bs-body-font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bs-body-color: var(--ink);
+  --bs-link-color: var(--iom-blue);
+  --bs-link-hover-color: var(--iom-blue-dark);
+  --bs-secondary-color: var(--muted);
+  font-family: var(--bs-body-font-family);
+  color: var(--ink);
+}
+
+/* Buttons and forms */
+main .btn { border-radius: .55rem; font-weight: 500; }
+main .btn-primary {
+  --bs-btn-bg: var(--iom-blue); --bs-btn-border-color: var(--iom-blue);
+  --bs-btn-hover-bg: var(--iom-blue-dark); --bs-btn-hover-border-color: var(--iom-blue-dark);
+  --bs-btn-active-bg: var(--iom-blue-dark); --bs-btn-active-border-color: var(--iom-blue-dark);
+  --bs-btn-focus-shadow-rgb: 0, 51, 160;
+}
+main .btn-outline-primary {
+  --bs-btn-color: var(--iom-blue); --bs-btn-border-color: #b9c7e6;
+  --bs-btn-hover-bg: var(--iom-blue); --bs-btn-hover-border-color: var(--iom-blue);
+  --bs-btn-active-bg: var(--iom-blue-dark); --bs-btn-active-border-color: var(--iom-blue-dark);
+  --bs-btn-focus-shadow-rgb: 0, 51, 160;
+}
+main .btn-outline-secondary {
+  --bs-btn-color: var(--muted); --bs-btn-border-color: var(--line);
+  --bs-btn-hover-bg: var(--mist); --bs-btn-hover-color: var(--ink); --bs-btn-hover-border-color: var(--line);
+}
+.form-label { font-size: .82rem; font-weight: 500; color: var(--muted); margin-bottom: .3rem; }
+main .form-control, main .form-select { border-color: var(--line); border-radius: .55rem; padding: .55rem .8rem; }
+main .form-control:focus, main .form-select:focus { border-color: var(--iom-blue); box-shadow: 0 0 0 .2rem rgba(0, 51, 160, .18); }
+
+/* Header */
+.back-link { display: inline-flex; font-size: .88rem; font-weight: 500; text-decoration: none; }
+.back-link:hover { text-decoration: underline; }
+.page-title { font-size: 1.65rem; font-weight: 600; letter-spacing: -.01em; }
+
+/* Panels and stat cards */
+.panel { background: #fff; border: 1px solid var(--line); border-radius: 1rem; box-shadow: 0 1px 2px rgba(11, 31, 77, .04); overflow: hidden; }
+.stat { padding: 1.15rem 1.25rem; position: relative; height: 100%; }
+.stat::before { content: ""; position: absolute; left: 0; top: 1rem; bottom: 1rem; width: 4px; border-radius: 0 4px 4px 0; background: var(--iom-blue); }
+.stat.tone-green::before { background: var(--tone-green); }
+.stat-label { font-size: .85rem; color: var(--muted); }
+.stat-value { font-size: 2.1rem; font-weight: 600; line-height: 1.15; letter-spacing: -.02em; }
+.stat-link { display: inline-flex; align-items: center; gap: .35rem; margin-top: .55rem; font-weight: 500; text-decoration: none; }
+.stat-link:hover { text-decoration: underline; }
+.stat-link-card { background: var(--mist); border-color: #cfdaf0; }
+
+/* Table */
+.people-table { --bs-table-bg: transparent; width: 100%; min-width: 900px; margin: 0; }
+.people-table th, .people-table td { text-align: left; vertical-align: middle; padding: .9rem 1.25rem; border-color: var(--line); line-height: 1.4; }
+.people-table thead th {
+  background: var(--mist); color: var(--muted); font-size: .76rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; border-bottom: 1px solid var(--line);
+}
+.people-table tbody tr:hover > * { background: #f6f8fd; }
+.people-table .col-id { white-space: nowrap; width: 1%; font-weight: 600; font-variant-numeric: tabular-nums; }
+.people-table .col-num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.people-table .col-status { white-space: nowrap; width: 1%; }
+.people-table .col-action { text-align: right; white-space: nowrap; width: 1%; }
+.people-table .empty { text-align: center !important; color: var(--muted); padding: 2.75rem 1rem; }
+.person { display: flex; align-items: center; gap: .65rem; }
+.person a { font-weight: 500; text-decoration: none; }
+.person a:hover { text-decoration: underline; }
+.avatar {
+  flex: none; width: 2rem; height: 2rem; border-radius: 50%; background: var(--mist); color: var(--iom-blue);
+  display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: .82rem;
+}
+.username { color: var(--muted); font-size: .9rem; }
+
+/* Status pill */
+.pill {
+  --tone: var(--tone-grey); --tone-bg: var(--tone-grey-bg);
+  display: inline-flex; align-items: center; gap: .4rem; background: var(--tone-bg); color: var(--tone);
+  font-size: .8rem; font-weight: 500; line-height: 1; padding: .3rem .65rem; border-radius: 999px; white-space: nowrap;
+}
+.pill::before { content: ""; width: .45rem; height: .45rem; border-radius: 50%; background: var(--tone); flex: none; }
+.pill[data-tone="green"] { --tone: var(--tone-green); --tone-bg: var(--tone-green-bg); }
+
+main .alert { border-radius: .75rem; border: 0; }
+</style><link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
 </head>
-<body class="bg-light"><nav class="navbar navbar-dark bg-primary"><div class="container-fluid px-4"><a class="navbar-brand" href="{% url 'housing:house-list' %}"><img class="iom-navbar-logo" src="/static/hrmis/images/iom-logo.png" alt="IOM – UN Migration"><span class="brand-caption">Housing Reconstruction Monitoring</span></a><div class="d-flex align-items-center gap-3 text-white"><span class="small">{{ request.user.get_full_name|default:request.user.username }}</span><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-light">Sign out</button></form></div></div></nav>
-<main class="container-fluid px-4 py-4">
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><a href="{% url 'housing:house-list' %}" class="small">← Housing registry</a><h2 class="mt-2 mb-1">Engineer management</h2><p class="text-secondary mb-0">Manage engineer accounts, assignments and access.</p></div><a class="btn btn-primary" href="{% url 'accounts:engineer-create' %}">+ Register engineer</a></div>
-{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
-<div class="row g-3 mb-3"><div class="col-md-4"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-secondary small">All engineer profiles</div><div class="display-6">{{ total_engineers }}</div></div></div></div><div class="col-md-4"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-secondary small">Active engineers</div><div class="display-6">{{ active_engineers }}</div></div></div></div><div class="col-md-4"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-secondary small">Bulk assignment</div><a href="{% url 'accounts:house-assign' %}">Assign houses to engineers →</a></div></div></div></div>
-<form method="get" class="card card-body border-0 shadow-sm mb-3"><div class="row g-2 align-items-end"><div class="col-md-7"><label class="form-label">Search engineers</label><input class="form-control" name="q" value="{{ search }}" placeholder="Name, employee ID, username or designation"></div><div class="col-md-3"><label class="form-label">Account status</label><select name="status" class="form-select"><option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option><option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option><option value="all" {% if selected_status == 'all' %}selected{% endif %}>All</option></select></div><div class="col-md-2 d-flex gap-2"><button class="btn btn-primary flex-grow-1">Filter</button><a class="btn btn-outline-secondary" href="{% url 'accounts:engineer-list' %}">Reset</a></div></div></form>
-<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Employee ID</th><th>Engineer</th><th>Username</th><th>Designation</th><th>Phone</th><th>Assigned houses</th><th>Status</th><th></th></tr></thead><tbody>{% for engineer in engineers %}<tr><td class="fw-semibold">{{ engineer.employee_id }}</td><td><a href="{% url 'accounts:engineer-detail' engineer.pk %}">{{ engineer.user.get_full_name|default:engineer.user.username }}</a></td><td>{{ engineer.user.username }}</td><td>{{ engineer.designation|default:'—' }}</td><td>{{ engineer.phone|default:'—' }}</td><td>{{ engineer.current_house_count }}</td><td>{% if engineer.is_active and engineer.user.is_active %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-secondary">Inactive</span>{% endif %}</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'accounts:engineer-detail' engineer.pk %}">View</a></td></tr>{% empty %}<tr><td colspan="8" class="text-center text-secondary py-4">No engineers found.</td></tr>{% endfor %}</tbody></table></div></div>
+<body class="bg-light"><nav class="navbar navbar-dark bg-primary"><div class="container-fluid px-4"><a class="navbar-brand" href="{% url 'housing:house-list' %}"><span class="hrmis-navbar-brand">
+  <img class="hrmis-navbar-logo" src="/static/hrmis/images/iom-logo-hd.jpg" alt="International Organization for Migration (IOM)">
+  <span class="hrmis-navbar-title">Housing Reconstruction Information Management System <span class="hrmis-navbar-acronym">(HRMIS)</span></span>
+</span></a><div class="d-flex align-items-center gap-3 text-white"><span class="small">{{ request.user.get_full_name|default:request.user.username }}</span><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-light">Sign out</button></form></div></div></nav>
+
+<main class="container-fluid px-4 py-4 py-lg-5">
+
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+    <div>
+      <a href="{% url 'housing:house-list' %}" class="back-link">← Housing registry</a>
+      <h1 class="page-title mt-2 mb-1">Engineer management</h1>
+      <p class="text-secondary mb-0">Manage engineer accounts, assignments and access.</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'accounts:engineer-create' %}">+ Register engineer</a>
+  </div>
+
+  {% for message in messages %}<div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %}" role="alert">{{ message }}</div>{% endfor %}
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4">
+      <div class="panel stat">
+        <div class="stat-label">All engineer profiles</div>
+        <div class="stat-value">{{ total_engineers }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="panel stat tone-green">
+        <div class="stat-label">Active engineers</div>
+        <div class="stat-value">{{ active_engineers }}</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="panel stat stat-link-card">
+        <div class="stat-label">Bulk assignment</div>
+        <a class="stat-link" href="{% url 'accounts:house-assign' %}">Assign houses to engineers →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" class="panel p-3 p-lg-4 mb-4">
+    <div class="row g-3 align-items-end">
+      <div class="col-12 col-md-7">
+        <label class="form-label" for="e-q">Search engineers</label>
+        <input id="e-q" class="form-control" name="q" value="{{ search }}" placeholder="Name, employee ID, username or designation">
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label" for="e-status">Account status</label>
+        <select id="e-status" name="status" class="form-select">
+          <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option>
+          <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All</option>
+        </select>
+      </div>
+      <div class="col-12 col-md-2 d-flex gap-2">
+        <button class="btn btn-primary flex-grow-1">Filter</button>
+        <a class="btn btn-outline-secondary" href="{% url 'accounts:engineer-list' %}">Reset</a>
+      </div>
+    </div>
+  </form>
+
+  <!-- Table -->
+  <section class="panel">
+    <div class="table-responsive">
+      <table class="table people-table">
+        <thead>
+          <tr>
+            <th class="col-id">Employee ID</th>
+            <th>Engineer</th>
+            <th>Username</th>
+            <th>Designation</th>
+            <th>Phone</th>
+            <th>Assigned houses</th>
+            <th class="col-status">Status</th>
+            <th class="col-action"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for engineer in engineers %}
+          <tr>
+            <td class="col-id">{{ engineer.employee_id }}</td>
+            <td><div class="person"><span class="avatar" aria-hidden="true">{{ engineer.user.username|slice:":1"|upper }}</span><a href="{% url 'accounts:engineer-detail' engineer.pk %}">{{ engineer.user.get_full_name|default:engineer.user.username }}</a></div></td>
+            <td class="username">{{ engineer.user.username }}</td>
+            <td>{{ engineer.designation|default:'—' }}</td>
+            <td class="col-num">{{ engineer.phone|default:'—' }}</td>
+            <td class="col-num">{{ engineer.current_house_count }}</td>
+            <td class="col-status">{% if engineer.is_active and engineer.user.is_active %}<span class="pill" data-tone="green">Active</span>{% else %}<span class="pill">Inactive</span>{% endif %}</td>
+            <td class="col-action"><a class="btn btn-sm btn-outline-primary" href="{% url 'accounts:engineer-detail' engineer.pk %}">View</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="empty">No engineers found.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
 </main></body></html>

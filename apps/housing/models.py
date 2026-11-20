@@ -6,6 +6,20 @@ from apps.locations.models import Village
 
 
 class House(models.Model):
+    class DamageClassification(models.TextChoices):
+        MINOR = "MINOR", "Minor damage"
+        MODERATE = "MODERATE", "Moderate damage"
+        SEVERE = "SEVERE", "Severe damage"
+        DESTROYED = "DESTROYED", "Destroyed"
+        OTHER = "OTHER", "Other"
+
+    class ReconstructionType(models.TextChoices):
+        FULL = "FULL", "Full reconstruction"
+        PARTIAL = "PARTIAL", "Partial reconstruction"
+        MAJOR_REHABILITATION = "MAJOR_REHABILITATION", "Major rehabilitation"
+        REPAIR = "REPAIR", "Repair / rehabilitation"
+        OTHER = "OTHER", "Other"
+
     class Status(models.TextChoices):
         REGISTERED = "REGISTERED", "Registered"
         IN_PROGRESS = "IN_PROGRESS", "Under reconstruction"
@@ -35,8 +49,8 @@ class House(models.Model):
 
     house_type = models.CharField(max_length=100, blank=True)
     bedrooms = models.PositiveSmallIntegerField(null=True, blank=True)
-    damage_classification = models.CharField(max_length=100, blank=True)
-    reconstruction_type = models.CharField(max_length=120, blank=True)
+    damage_classification = models.CharField(max_length=100, choices=DamageClassification.choices, blank=True)
+    reconstruction_type = models.CharField(max_length=120, choices=ReconstructionType.choices, blank=True)
     contractor = models.CharField(max_length=200, blank=True)
 
     assigned_engineer = models.ForeignKey(

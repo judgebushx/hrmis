@@ -33,7 +33,14 @@ def house_list(request):
         houses = houses.filter(village__municipality__island_id=island)
     if status:
         houses = houses.filter(status=status)
-    paginator = Paginator(houses.distinct(), 25)
+    allowed_page_sizes = (25, 50, 100)
+    try:
+        page_size = int(request.GET.get("page_size", 25))
+    except (TypeError, ValueError):
+        page_size = 25
+    if page_size not in allowed_page_sizes:
+        page_size = 25
+    paginator = Paginator(houses.distinct(), page_size)
     page_obj = paginator.get_page(request.GET.get("page"))
     islands = []
     if request.user.is_superuser:
@@ -44,7 +51,7 @@ def house_list(request):
         for h in page_obj.object_list
     ]
     context = {
-        "page_obj": page_obj, "houses": page_obj.object_list, "search": search,
+        "page_obj": page_obj, "houses": page_obj.object_list, "search": search, "page_size": page_size,
         "selected_island": island, "selected_status": status, "islands": islands,
         "statuses": House.Status.choices, "total_houses": accessible_houses(request.user).count(),
         "assigned_count": (

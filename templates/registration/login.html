@@ -15,6 +15,7 @@
       --ink: #0b1f4d;
       --iom-blue: #0033a0;        /* Pantone 286 C – IOM blue (swap for your official hex if different) */
       --iom-blue-dark: #00277d;
+      --logo-blue: #003499;       /* the flat blue inside the IOM logo file, so logo and panel blend seamlessly */
       --mist: #eaf0fa;
       --line: #cfd9ec;
       --signal: #f2a900;
@@ -30,16 +31,24 @@
 
     /* Brand panel */
     .brand-panel {
-      background: var(--iom-blue);
+      background: var(--logo-blue);
       color: #e8eefb;
       padding: clamp(2rem, 5vw, 4rem);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
     }
-    .brand-mark { font-weight: 600; font-size: 1.5rem; letter-spacing: .02em; color: #fff; }
+
+    /* Logo + system title, top of the brand panel */
+    .brand-lockup { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; }
+    .brand-logo-card { display: inline-flex; align-items: center; }
+    .brand-logo { height: 56px; width: auto; display: block; }
+    /* 'lighten' hides JPEG edge noise: wherever the logo is darker than the panel, the panel colour wins; the white lettering is unaffected */
+    .brand-panel .brand-logo { mix-blend-mode: lighten; }
+    .brand-title { margin: 0; max-width: 26ch; font-size: 1rem; font-weight: 500; line-height: 1.4; color: #fff; }
+    .brand-title .acronym { font-weight: 600; }
+
     .brand-panel h1 { font-size: clamp(1.6rem, 2.6vw, 2.2rem); font-weight: 500; line-height: 1.25; max-width: 22ch; }
-    .brand-panel p { color: #c3d0ee; max-width: 38ch; }
 
     .stages { width: 100%; max-width: 420px; height: auto; }
     .stages .roof, .stages .wall { stroke: #9fb3e0; fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
@@ -78,26 +87,32 @@
     .toggle-pw:hover { background: var(--mist); color: var(--ink); }
     .input-group > .form-control { border-radius: .5rem 0 0 .5rem; }
 
-    .mobile-brand { color: var(--ink); font-weight: 600; font-size: 1.25rem; }
-    .mobile-brand::before {
-      content: ""; display: inline-block; width: .6rem; height: .6rem;
-      background: var(--signal); border-radius: 50%; margin-right: .5rem;
-    }
+    /* Logo + title shown above the form on phones and tablets (the brand panel is hidden there) */
+    .mobile-lockup { display: flex; align-items: center; gap: .9rem; margin-bottom: 2rem; }
+    .mobile-lockup .brand-logo { height: 40px; }
+    .mobile-lockup .mobile-title { margin: 0; font-size: .85rem; font-weight: 500; line-height: 1.35; color: var(--ink); }
+    .mobile-lockup .mobile-title .acronym { color: var(--iom-blue); font-weight: 600; }
   </style>
 <link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
 </head>
 
 <body>
+
 <main class="container-fluid p-0">
   <div class="row g-0 min-vh-100">
 
     <!-- Brand panel (desktop only) -->
     <section class="col-lg-6 d-none d-lg-flex brand-panel" aria-label="About HRMIS">
-      <div class="brand-mark">HRMIS</div>
+
+      <div class="brand-lockup">
+        <a href="{% url 'login' %}" class="brand-logo-card">
+          <img class="brand-logo" src="/static/hrmis/images/iom-logo-hd.jpg" alt="International Organization for Migration (IOM)">
+        </a>
+        <p class="brand-title">Housing Reconstruction Information Management System <span class="acronym">(HRMIS)</span></p>
+      </div>
 
       <div>
-        <h1 class="mb-3">Follow every home from approval to completion.</h1>
-        <p class="mb-5">Housing Reconstruction Monitoring Information System</p>
+        <h1 class="mb-5">Follow every home from approval to completion.</h1>
 
         <svg class="stages" viewBox="0 0 420 130" role="img"
              aria-label="Three houses showing progress: foundation, framing, completed">
@@ -131,8 +146,10 @@
     <section class="col-12 col-lg-6 d-flex align-items-center justify-content-center form-panel">
       <div class="form-wrap">
 
-        <div class="mobile-brand d-lg-none mb-1">HRMIS</div>
-        <p class="text-secondary small d-lg-none mb-4">Housing Reconstruction Monitoring Information System</p>
+        <div class="mobile-lockup d-lg-none">
+          <a href="{% url 'login' %}"><img class="brand-logo" src="/static/hrmis/images/iom-logo-hd.jpg" alt="International Organization for Migration (IOM)"></a>
+          <p class="mobile-title">Housing Reconstruction Information Management System <span class="acronym">(HRMIS)</span></p>
+        </div>
 
         <h2 class="mb-1">Sign in</h2>
         <p class="text-secondary mb-4">Use your HRMIS username and password.</p>

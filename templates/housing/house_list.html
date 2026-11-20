@@ -1,157 +1,640 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Housing Register | HRMIS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
 <style>
-body{background:#f5f7fb}.stat{border:0;border-radius:14px}
-.map{height:360px;border-radius:12px;z-index:1}
-#house-map-shell{position:relative}
-#house-map-shell.is-maximized{position:fixed;inset:12px;z-index:2000;background:#fff;padding:12px;border-radius:16px;box-shadow:0 12px 48px rgba(0,0,0,.28);display:flex;flex-direction:column}
-#house-map-shell.is-maximized #house-map{height:auto;min-height:0;flex:1}
-body.map-is-maximized{overflow:hidden}
-.map-toggle{border:1px solid #0033a0;background:#fff;color:#0033a0;border-radius:8px;padding:6px 11px;font-size:.875rem;transition:background-color .16s ease,color .16s ease,box-shadow .16s ease}
-.map-toggle:hover{background:#0033a0;color:#fff;box-shadow:0 2px 7px rgba(0,51,160,.18)}
-.numbered-house-marker{background:transparent;border:0}
-.numbered-house-marker__circle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--marker-colour,#0033a0);border:2px solid #fff;color:#fff;font-size:12px;font-weight:700;line-height:1;box-shadow:0 2px 6px rgba(11,31,77,.35)}
-.table thead th{white-space:nowrap}
-</style><link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
-</head>
-<body><nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand fw-semibold" href="{% url 'housing:house-list' %}"><img class="iom-navbar-logo" src="/static/hrmis/images/iom-logo-hd.jpg" alt="IOM – UN Migration"><span class="brand-caption">Housing Reconstruction Monitoring</span></a><div class="d-flex align-items-center gap-3 text-white"><span class="small">{{ request.user.get_full_name|default:request.user.username }}</span><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-light">Sign out</button></form></div></div></nav>
-<main class="container py-4">
-{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">{{ message }}<button class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><h2 class="mb-1">Housing registry</h2><p class="text-secondary mb-0">House-level reconstruction records and engineer assignments</p></div>
-{% if request.user.is_superuser %}<div class="d-flex flex-wrap align-items-center gap-2 registry-toolbar"><nav class="d-flex flex-wrap gap-2 registry-navigation" aria-label="Housing management navigation"><a class="btn btn-primary" href="{% url 'dashboard:programme-dashboard' %}">Programme dashboard</a><a class="btn btn-primary" href="{% url 'progress:progress-review-list' %}">Progress reviews</a><a class="btn btn-primary" href="{% url 'accounts:inspector-list' %}">Inspector management</a><a class="btn btn-primary" href="{% url 'inspections:inspection-list' %}">Inspections &amp; QA</a><a class="btn btn-primary" href="{% url 'scheduling:programme-schedule' %}">Planning &amp; scheduling</a><a class="btn btn-primary" href="{% url 'accounts:engineer-list' %}">Manage engineers</a><a class="btn btn-primary" href="{% url 'housing:house-import-template' %}">Download Excel template</a><a class="btn btn-primary" href="{% url 'housing:house-import' %}">Import houses</a></nav><a class="btn btn-outline-primary register-house-action" href="{% url 'housing:house-create' %}">+ Register house</a></div>{% endif %}</div>
-<div class="row g-3 mb-4"><div class="col-md-4"><div class="card stat shadow-sm"><div class="card-body"><div class="text-secondary small">Houses visible to you</div><div class="display-6 fw-semibold">{{ total_houses }}</div></div></div></div><div class="col-md-4"><div class="card stat shadow-sm"><div class="card-body"><div class="text-secondary small">Assigned</div><div class="display-6 fw-semibold">{{ assigned_count }}</div></div></div></div><div class="col-md-4"><div class="card stat shadow-sm"><div class="card-body"><div class="text-secondary small">Unassigned</div><div class="display-6 fw-semibold">{{ unassigned_count }}</div></div></div></div></div>
-<div class="card border-0 shadow-sm mb-4"><div class="card-body"><form method="get" class="row g-2 align-items-end"><div class="col-md-5"><label class="form-label">Search</label><input class="form-control" name="q" value="{{ search }}" placeholder="House ID or beneficiary"></div>{% if request.user.is_superuser %}<div class="col-md-3"><label class="form-label">Island</label><select class="form-select" name="island"><option value="">All islands</option>{% for item in islands %}<option value="{{ item.pk }}" {% if selected_island == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>{% endif %}<div class="col-md-2"><label class="form-label">Status</label><select class="form-select" name="status"><option value="">All statuses</option>{% for value,label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div class="col-md-2 d-flex gap-2"><button class="btn btn-primary flex-grow-1">Filter</button><a class="btn btn-primary" href="{% url 'housing:house-list' %}">Reset</a></div></form></div></div>
-<div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center"><div>House locations on map <span class="text-secondary fw-normal small">(current page)</span></div><button type="button" id="map-maximize-toggle" class="map-toggle" aria-pressed="false" aria-label="Maximize map">⛶ Expand map</button></div><div class="card-body" id="house-map-shell"><div id="house-map" class="map"></div>{% if not houses %}<p class="text-secondary small mt-2 mb-0">No houses to display yet.</p>{% endif %}</div></div>
-<div class="card border-0 shadow-sm"><div class="card-header bg-white fw-semibold">Registered houses</div><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>House ID</th><th>Beneficiary</th><th>Location</th><th>Engineer</th><th>Status</th><th></th></tr></thead><tbody>{% for house in houses %}<tr><td class="fw-semibold"><a href="{% url 'housing:house-detail' house.pk %}">{{ house.house_id }}</a></td><td>{{ house.beneficiary_name|default:'—' }}</td><td>{{ house.village.name }}, {{ house.village.municipality.island.name }}</td><td>{{ house.assigned_engineer|default:'Unassigned' }}</td><td><span class="badge text-bg-light">{{ house.get_status_display }}</span></td><td class="text-end">{% if request.user.is_superuser %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'housing:house-update' house.pk %}">Edit</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="6" class="text-center text-secondary py-4">No houses found. {% if request.user.is_superuser %}Register a house or import the housing register.{% else %}No houses are currently assigned to your account.{% endif %}</td></tr>{% endfor %}</tbody></table></div>
-{% if page_obj.has_other_pages %}<div class="card-footer bg-white d-flex justify-content-between align-items-center"><span class="small text-secondary">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span><div class="btn-group">{% if page_obj.has_previous %}<a class="btn btn-sm btn-outline-secondary" href="?q={{ search|urlencode }}&island={{ selected_island }}&status={{ selected_status }}&page={{ page_obj.previous_page_number }}">Previous</a>{% else %}<span class="btn btn-sm btn-outline-secondary disabled">Previous</span>{% endif %}{% if page_obj.has_next %}<a class="btn btn-sm btn-outline-secondary" href="?q={{ search|urlencode }}&island={{ selected_island }}&status={{ selected_status }}&page={{ page_obj.next_page_number }}">Next</a>{% else %}<span class="btn btn-sm btn-outline-secondary disabled">Next</span>{% endif %}</div></div>{% endif %}</div>
-</main><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>{{ map_points|json_script:"house-points" }}<script>
+/* All styling below is scoped to <main>, so the navigation bar is left exactly as it was. */
+body { background: #f4f6fb; }
+body.map-is-maximized { overflow: hidden; }
 
-const points = JSON.parse(
-    document.getElementById('house-points').textContent
-);
+main {
+  --ink: #0b1f4d;
+  --muted: #5b6b8c;
+  --iom-blue: #0033a0;
+  --iom-blue-dark: #00277d;
+  --mist: #eaf0fa;
+  --line: #dde5f3;
 
-// Initialize map
-const map = L.map('house-map', {
-    center: [7.45, 151.85],
-    zoom: 10,
-    scrollWheelZoom: true
-});
+  --tone-blue: #0033a0;  --tone-blue-bg: #eaf0fa;
+  --tone-green: #16834a; --tone-green-bg: #e4f4ea;
+  --tone-amber: #b87800; --tone-amber-bg: #fdf1d6;
+  --tone-red: #c43d3d;   --tone-red-bg: #fbe8e8;
 
-// OpenStreetMap standard tile endpoint
-L.tileLayer(
-    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {
-        maxZoom: 19,
-        referrerPolicy: 'strict-origin-when-cross-origin',
-        attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>'
-    }
-).addTo(map);
-
-// Plot registered houses
-const bounds = [];
-
-points.forEach(function(p) {
-
-    const lat = Number(p.lat);
-    const lon = Number(p.lon);
-
-    if (
-        !Number.isFinite(lat) ||
-        !Number.isFinite(lon) ||
-        lat < -90 || lat > 90 ||
-        lon < -180 || lon > 180
-    ) {
-        return;
-    }
-
-    // Numbered circular markers; colour communicates the house's current status.
-    const statusText = String(p.status || '').toLowerCase();
-    let markerColour = '#0033a0'; // Registered / default
-    if (statusText.includes('completed') || statusText.includes('handed over')) {
-        markerColour = '#16834a';
-    } else if (statusText.includes('under reconstruction') || statusText.includes('in progress')) {
-        markerColour = '#d18a00';
-    } else if (statusText.includes('hold') || statusText.includes('suspend')) {
-        markerColour = '#c43d3d';
-    }
-    const markerNumber = bounds.length + 1;
-    const numberedIcon = L.divIcon({
-        className: 'numbered-house-marker',
-        html: `<span class="numbered-house-marker__circle" style="--marker-colour:${markerColour}" aria-label="House ${markerNumber}">${markerNumber}</span>`,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17],
-        popupAnchor: [0, -18]
-    });
-    const marker = L.marker([lat, lon], {
-        icon: numberedIcon,
-        title: String(p.id || `House ${markerNumber}`)
-    }).addTo(map);
-
-    // Construct popup safely
-    const popup = document.createElement('div');
-
-    const title = document.createElement('strong');
-    title.textContent = p.id;
-
-    const status = document.createElement('p');
-    status.textContent = p.status;
-
-    const link = document.createElement('a');
-    link.href = p.url;
-    link.textContent = 'Open house record';
-
-    popup.appendChild(title);
-    popup.appendChild(status);
-    popup.appendChild(link);
-
-    marker.bindPopup(popup);
-
-    bounds.push([lat, lon]);
-});
-
-// Automatically zoom to registered houses
-if (bounds.length > 0) {
-    map.fitBounds(bounds, {
-        padding: [30, 30],
-        maxZoom: 14
-    });
+  --bs-body-font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bs-body-color: var(--ink);
+  --bs-link-color: var(--iom-blue);
+  --bs-link-hover-color: var(--iom-blue-dark);
+  --bs-secondary-color: var(--muted);
+  font-family: var(--bs-body-font-family);
+  color: var(--ink);
 }
 
-// Correct map rendering after page initialization
-setTimeout(function() {
-    map.invalidateSize();
-}, 250);
+/* Buttons */
+main .btn { border-radius: .55rem; font-weight: 500; }
+main .btn-primary {
+  --bs-btn-bg: var(--iom-blue); --bs-btn-border-color: var(--iom-blue);
+  --bs-btn-hover-bg: var(--iom-blue-dark); --bs-btn-hover-border-color: var(--iom-blue-dark);
+  --bs-btn-active-bg: var(--iom-blue-dark); --bs-btn-active-border-color: var(--iom-blue-dark);
+  --bs-btn-focus-shadow-rgb: 0, 51, 160;
+}
+main .btn-outline-primary {
+  --bs-btn-color: var(--iom-blue); --bs-btn-border-color: #b9c7e6;
+  --bs-btn-hover-bg: var(--iom-blue); --bs-btn-hover-border-color: var(--iom-blue);
+  --bs-btn-active-bg: var(--iom-blue-dark); --bs-btn-active-border-color: var(--iom-blue-dark);
+  --bs-btn-focus-shadow-rgb: 0, 51, 160;
+}
+main .btn-outline-secondary {
+  --bs-btn-color: var(--muted); --bs-btn-border-color: var(--line);
+  --bs-btn-hover-bg: var(--mist); --bs-btn-hover-color: var(--ink); --bs-btn-hover-border-color: var(--line);
+}
 
-// Expand the map for easier inspection, then restore its original layout.
-const mapShell = document.getElementById('house-map-shell');
-const mapToggle = document.getElementById('map-maximize-toggle');
+.page-title { font-size: 1.65rem; font-weight: 600; letter-spacing: -.01em; }
 
-function setMapMaximized(maximized) {
+/* Quick links */
+.quick-links { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-bottom: 1.5rem; }
+.quick-links .label { font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-right: .25rem; }
+.quick-links a {
+  display: inline-flex; align-items: center; background: #fff; border: 1px solid var(--line); color: var(--ink);
+  border-radius: 999px; padding: .38rem .9rem; font-size: .86rem; font-weight: 500; text-decoration: none;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.quick-links a:hover { background: var(--mist); border-color: #b9c7e6; color: var(--iom-blue); }
+.quick-links a:focus-visible { outline: 3px solid rgba(0, 51, 160, .3); outline-offset: 2px; }
+.quick-links .sep { width: 1px; height: 1.25rem; background: var(--line); margin: 0 .25rem; }
+
+/* Panels */
+.panel { background: #fff; border: 1px solid var(--line); border-radius: 1rem; box-shadow: 0 1px 2px rgba(11, 31, 77, .04); overflow: hidden; }
+.panel-head {
+  padding: .8rem 1.25rem; border-bottom: 1px solid var(--line); font-weight: 600; min-height: 3.5rem;
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap;
+}
+.panel-head small { color: var(--muted); font-weight: 400; }
+
+.stat { padding: 1.15rem 1.25rem; position: relative; }
+.stat::before { content: ""; position: absolute; left: 0; top: 1rem; bottom: 1rem; width: 4px; border-radius: 0 4px 4px 0; background: var(--iom-blue); }
+.stat.is-warn::before { background: #f2a900; }
+.stat-label { color: var(--muted); font-size: .85rem; }
+.stat-value { font-size: 2.1rem; font-weight: 600; line-height: 1.15; letter-spacing: -.02em; }
+
+/* Forms */
+.form-label { font-size: .82rem; font-weight: 500; color: var(--muted); margin-bottom: .3rem; }
+main .form-control, main .form-select { border-color: var(--line); border-radius: .55rem; padding: .55rem .8rem; }
+main .form-select-sm { padding: .3rem 2rem .3rem .65rem; }
+main .form-control:focus, main .form-select:focus { border-color: var(--iom-blue); box-shadow: 0 0 0 .2rem rgba(0, 51, 160, .18); }
+.page-size-form { display: flex; align-items: center; gap: .5rem; margin: 0; font-weight: 400; }
+.page-size-form label { margin: 0; font-size: .82rem; color: var(--muted); white-space: nowrap; }
+.page-size-form .form-select { width: auto; }
+
+/* Map */
+#house-map-shell { position: relative; }
+.map { height: 380px; z-index: 1; }
+.map-tools { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.legend { display: flex; flex-wrap: wrap; gap: .25rem .9rem; font-size: .78rem; font-weight: 400; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: .35rem; }
+.legend svg { width: 1rem; height: 1rem; flex: none; }
+.map-toggle {
+  border: 1px solid #b9c7e6; background: #fff; color: var(--iom-blue); border-radius: .55rem;
+  padding: .35rem .8rem; font-size: .85rem; font-weight: 500;
+  transition: background-color .16s ease, color .16s ease, border-color .16s ease;
+}
+.map-toggle:hover { background: var(--iom-blue); border-color: var(--iom-blue); color: #fff; }
+.map-toggle:focus-visible { outline: 3px solid rgba(0, 51, 160, .3); outline-offset: 2px; }
+#house-map-shell.is-maximized {
+  position: fixed; inset: 12px; z-index: 2000; display: flex; flex-direction: column;
+  border-radius: 1rem; box-shadow: 0 0 0 100vmax rgba(11, 31, 77, .55);
+}
+#house-map-shell.is-maximized #house-map { height: auto; min-height: 0; flex: 1; }
+
+.house-marker { background: transparent; border: 0; filter: drop-shadow(0 1px 2px rgba(11, 31, 77, .45)); }
+.house-marker svg { display: block; }
+
+/* Cluster badge: click it to zoom in; at the closest zoom, houses on the same spot fan out */
+.house-cluster-wrap { background: transparent; border: 0; }
+.house-cluster {
+  display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%;
+  background: var(--iom-blue); color: #fff; font-size: .95rem; font-weight: 600; line-height: 1;
+  border: 3px solid #fff; box-shadow: 0 0 0 5px rgba(0, 51, 160, .22), 0 2px 8px rgba(11, 31, 77, .4);
+  font-variant-numeric: tabular-nums; cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.house-cluster:hover { transform: scale(1.08); box-shadow: 0 0 0 7px rgba(0, 51, 160, .28), 0 2px 8px rgba(11, 31, 77, .4); }
+
+/* House popups */
+.house-popup .leaflet-popup-content-wrapper { border-radius: 14px; padding: 0; border: 1px solid var(--line); box-shadow: 0 12px 32px rgba(11, 31, 77, .24); }
+.house-popup .leaflet-popup-content { margin: 0; font-family: inherit; }
+.house-popup .leaflet-popup-tip { box-shadow: 0 6px 12px rgba(11, 31, 77, .14); }
+.house-popup a.leaflet-popup-close-button {
+  top: 10px; right: 10px; width: 24px; height: 24px; font-size: 20px; line-height: 22px;
+  border-radius: 50%; color: var(--muted); text-align: center; padding: 0;
+}
+.house-popup a.leaflet-popup-close-button:hover { background: var(--mist); color: var(--ink); }
+.hp { padding: 16px 18px; font-size: .85rem; color: var(--ink); line-height: 1.4; }
+.hp-head { padding-right: 22px; }
+.hp-id { font-weight: 600; font-size: 1.08rem; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.hp-loc { display: flex; align-items: center; gap: .3rem; margin-top: .15rem; color: var(--muted); font-size: .8rem; }
+.hp-loc svg { width: .85rem; height: .85rem; flex: none; }
+.hp-pill {
+  --tone: var(--tone-blue); --tone-bg: var(--tone-blue-bg);
+  display: inline-flex; align-items: center; gap: .4rem; margin-top: .6rem; padding: .28rem .65rem;
+  border-radius: 999px; font-size: .78rem; font-weight: 500; line-height: 1; background: var(--tone-bg); color: var(--tone);
+}
+.hp-pill::before { content: ""; width: .45rem; height: .45rem; border-radius: 50%; background: var(--tone); }
+.hp-pill[data-tone="green"] { --tone: var(--tone-green); --tone-bg: var(--tone-green-bg); }
+.hp-pill[data-tone="amber"] { --tone: var(--tone-amber); --tone-bg: var(--tone-amber-bg); }
+.hp-pill[data-tone="red"]   { --tone: var(--tone-red);   --tone-bg: var(--tone-red-bg); }
+.hp-progress { margin-top: .9rem; }
+.hp-progress-top { display: flex; justify-content: space-between; align-items: baseline; color: var(--muted); font-size: .78rem; }
+.hp-progress-top strong { color: var(--ink); font-size: .95rem; font-variant-numeric: tabular-nums; }
+.hp-bar { height: 6px; border-radius: 999px; background: #e6ecf6; overflow: hidden; margin-top: .35rem; }
+.hp-bar > span { display: block; height: 100%; border-radius: 999px; background: var(--iom-blue); }
+.hp-rows { margin-top: .75rem; }
+.hp-row { display: flex; justify-content: space-between; gap: 1rem; padding: .5rem 0; border-top: 1px solid var(--line); }
+.hp-key { color: var(--muted); white-space: nowrap; }
+.hp-val { font-weight: 500; text-align: right; }
+.hp-val.is-empty { color: #8a96ab; font-style: italic; font-weight: 400; }
+.hp-note { display: flex; gap: .45rem; align-items: flex-start; margin-top: .7rem; padding: .55rem .7rem; border-radius: 9px; font-size: .78rem; }
+.hp-note svg { width: .95rem; height: .95rem; flex: none; margin-top: .05rem; }
+.hp-note.ok { background: var(--tone-green-bg); color: #14673b; }
+.hp-note.warn { background: #fff1e3; color: #a14a00; }
+.house-popup a.hp-btn {
+  display: block; margin-top: .85rem; padding: .55rem .9rem; border-radius: 9px; background: var(--iom-blue);
+  color: #fff; font-weight: 500; text-align: center; text-decoration: none;
+}
+.house-popup a.hp-btn:hover { background: var(--iom-blue-dark); color: #fff; }
+
+/* Houses table */
+.house-table { --bs-table-bg: transparent; width: 100%; min-width: 860px; margin: 0; }
+.house-table th, .house-table td {
+  text-align: left; vertical-align: middle; padding: .85rem 1.25rem; border-color: var(--line); line-height: 1.4;
+}
+.house-table thead th {
+  background: var(--mist); color: var(--muted); font-size: .76rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; border-bottom: 1px solid var(--line);
+}
+.house-table .col-id, .house-table .col-status { white-space: nowrap; width: 1%; }
+.house-table .col-action { text-align: right; white-space: nowrap; width: 1%; }
+.house-table-empty { text-align: center !important; }
+.house-table-hover > tbody > tr:hover > * { background: #f6f8fd; }
+.house-id { font-weight: 600; text-decoration: none; font-variant-numeric: tabular-nums; }
+.house-id:hover { text-decoration: underline; }
+.unassigned { color: var(--muted); font-style: italic; }
+
+.status-pill {
+  --tone: var(--tone-blue); --tone-bg: var(--tone-blue-bg);
+  display: inline-flex; align-items: center; gap: .4rem; background: var(--tone-bg); color: var(--tone);
+  font-size: .8rem; font-weight: 500; line-height: 1; padding: .3rem .65rem; border-radius: 999px; white-space: nowrap;
+}
+.status-pill::before { content: ""; width: .45rem; height: .45rem; border-radius: 50%; background: var(--tone); flex: none; }
+.status-pill[data-tone="green"] { --tone: var(--tone-green); --tone-bg: var(--tone-green-bg); }
+.status-pill[data-tone="amber"] { --tone: var(--tone-amber); --tone-bg: var(--tone-amber-bg); }
+.status-pill[data-tone="red"]   { --tone: var(--tone-red);   --tone-bg: var(--tone-red-bg); }
+
+/* Pagination */
+.panel-foot {
+  padding: .75rem 1.25rem; border-top: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem;
+}
+main .pagination {
+  --bs-pagination-color: var(--iom-blue); --bs-pagination-hover-color: var(--iom-blue-dark);
+  --bs-pagination-hover-bg: var(--mist); --bs-pagination-border-color: var(--line);
+  --bs-pagination-active-bg: var(--iom-blue); --bs-pagination-active-border-color: var(--iom-blue);
+  --bs-pagination-focus-box-shadow: 0 0 0 .2rem rgba(0, 51, 160, .18); margin: 0;
+}
+main .alert { border-radius: .75rem; border: 0; }
+</style><link rel="stylesheet" href="/static/hrmis/css/iom-brand-theme.css">
+</head>
+<body><nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand fw-semibold" href="{% url 'housing:house-list' %}"><span class="hrmis-navbar-brand">
+  <img class="hrmis-navbar-logo" src="/static/hrmis/images/iom-logo-hd.jpg" alt="International Organization for Migration (IOM)">
+  <span class="hrmis-navbar-title">Housing Reconstruction Information Management System <span class="hrmis-navbar-acronym">(HRMIS)</span></span>
+</span></a><div class="d-flex align-items-center gap-3 text-white"><span class="small">{{ request.user.get_full_name|default:request.user.username }}</span><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-light">Sign out</button></form></div></div></nav>
+
+<main class="container py-4 py-lg-5">
+
+  {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  {% endfor %}
+
+  <!-- Title + primary actions -->
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+    <div>
+      <h1 class="page-title mb-1">Housing registry</h1>
+      <p class="text-secondary mb-0">House-level reconstruction records and engineer assignments</p>
+    </div>
+    {% if request.user.is_superuser %}
+      <div class="d-flex flex-wrap gap-2 registry-toolbar">
+        <a class="btn btn-outline-primary" href="{% url 'housing:house-import' %}">Import houses</a>
+        <a class="btn btn-primary register-house-action" href="{% url 'housing:house-create' %}">+ Register house</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Quick links (all the management links, kept visible) -->
+  {% if request.user.is_superuser %}
+    <nav class="quick-links registry-navigation" aria-label="Housing management navigation">
+      <span class="label">Go to</span>
+      <a href="{% url 'dashboard:programme-dashboard' %}">Programme dashboard</a>
+      <a href="{% url 'progress:progress-review-list' %}">Progress reviews</a>
+      <a href="{% url 'inspections:inspection-list' %}">Inspections &amp; QA</a>
+      <a href="{% url 'scheduling:programme-schedule' %}">Planning &amp; scheduling</a>
+      <span class="sep" aria-hidden="true"></span>
+      <a href="{% url 'accounts:engineer-list' %}">Manage engineers</a>
+      <a href="{% url 'accounts:inspector-list' %}">Inspector management</a>
+      <a href="{% url 'housing:house-import-template' %}">Download Excel template</a>
+    </nav>
+  {% endif %}
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="panel stat">
+        <div class="stat-label">Houses visible to you</div>
+        <div class="stat-value">{{ total_houses }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="panel stat">
+        <div class="stat-label">Assigned</div>
+        <div class="stat-value">{{ assigned_count }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="panel stat{% if unassigned_count %} is-warn{% endif %}">
+        <div class="stat-label">Unassigned</div>
+        <div class="stat-value">{{ unassigned_count }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="panel mb-4">
+    <div class="p-3 p-lg-4">
+      <form method="get" class="row g-3 align-items-end">
+        <input type="hidden" name="page_size" value="{{ page_size }}">
+
+        <div class="col-12 {% if request.user.is_superuser %}col-md-5{% else %}col-md-8{% endif %}">
+          <label class="form-label" for="f-q">Search</label>
+          <input id="f-q" class="form-control" name="q" value="{{ search }}" placeholder="House ID or beneficiary">
+        </div>
+
+        {% if request.user.is_superuser %}
+          <div class="col-6 col-md-3">
+            <label class="form-label" for="f-island">Island</label>
+            <select id="f-island" class="form-select" name="island">
+              <option value="">All islands</option>
+              {% for item in islands %}
+                <option value="{{ item.pk }}" {% if selected_island == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+
+        <div class="col-6 col-md-2">
+          <label class="form-label" for="f-status">Status</label>
+          <select id="f-status" class="form-select" name="status">
+            <option value="">All statuses</option>
+            {% for value,label in statuses %}
+              <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <button class="btn btn-primary flex-grow-1">Filter</button>
+          <a class="btn btn-outline-secondary" href="{% url 'housing:house-list' %}">Reset</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div class="panel mb-4" id="house-map-shell">
+    <div class="panel-head">
+      <div>House locations <small>current page</small></div>
+      <div class="map-tools">
+        <div class="legend" aria-label="Marker colours">
+          <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 2 11h2.5v10h15V11H22z" fill="#0033a0"/></svg>Registered</span>
+          <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 2 11h2.5v10h15V11H22z" fill="#d18a00"/></svg>In progress</span>
+          <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 2 11h2.5v10h15V11H22z" fill="#16834a"/></svg>Completed</span>
+          <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 2 11h2.5v10h15V11H22z" fill="#c43d3d"/></svg>On hold</span>
+        </div>
+        <button type="button" id="map-maximize-toggle" class="map-toggle" aria-pressed="false" aria-label="Maximize map">⛶ Expand map</button>
+      </div>
+    </div>
+    <div id="house-map" class="map"></div>
+    {% if not houses %}
+      <p class="text-secondary small px-3 py-2 mb-0 border-top">No houses to display yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Table -->
+  <div class="panel">
+    <div class="panel-head">
+      <span>Registered houses</span>
+      <form method="get" class="page-size-form">
+        <input type="hidden" name="q" value="{{ search }}">
+        <input type="hidden" name="island" value="{{ selected_island }}">
+        <input type="hidden" name="status" value="{{ selected_status }}">
+        <label for="page-size">Rows per page</label>
+        <select id="page-size" name="page_size" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+          <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+          <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+        </select>
+      </form>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table house-table house-table-hover">
+        <thead>
+          <tr>
+            <th scope="col" class="col-id">House ID</th>
+            <th scope="col">Beneficiary</th>
+            <th scope="col">Location</th>
+            <th scope="col">Engineer</th>
+            <th scope="col" class="col-status">Status</th>
+            <th scope="col" class="col-action"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for house in houses %}
+            <tr>
+              <td class="col-id"><a class="house-id" href="{% url 'housing:house-detail' house.pk %}">{{ house.house_id }}</a></td>
+              <td>{{ house.beneficiary_name|default:'—' }}</td>
+              <td>{{ house.village.name }}, {{ house.village.municipality.island.name }}</td>
+              <td>{% if house.assigned_engineer %}{{ house.assigned_engineer }}{% else %}<span class="unassigned">Unassigned</span>{% endif %}</td>
+              <td class="col-status"><span class="status-pill">{{ house.get_status_display }}</span></td>
+              <td class="col-action">
+                {% if request.user.is_superuser %}
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'housing:house-update' house.pk %}">Edit</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="house-table-empty text-secondary py-5">
+                No houses found.
+                {% if request.user.is_superuser %}Register a house or import the housing register.{% else %}No houses are currently assigned to your account.{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+      <div class="panel-foot">
+        <span class="small text-secondary">Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} houses · Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        <nav aria-label="House list pagination">
+          <ul class="pagination pagination-sm">
+            {% if page_obj.has_previous %}
+              <li class="page-item"><a class="page-link" href="?q={{ search|urlencode }}&island={{ selected_island }}&status={{ selected_status }}&page_size={{ page_size }}&page=1">First</a></li>
+              <li class="page-item"><a class="page-link" href="?q={{ search|urlencode }}&island={{ selected_island }}&status={{ selected_status }}&page_size={{ page_size }}&page={{ page_obj.previous_page_number }}">Previous</a></li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+              {% if num == page_obj.number %}
+                <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+              {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                <li class="page-item"><a class="page-link" href="?q={{ search|urlencode }}&island={{ selected_island }}&status={{ selected_status }}&page_size={{ page_size }}&page={{ num }}">{{ num }}</a></li>
+              {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+              <li class="page-item"><a class="page-link" href="?q={{ search|urlencode }}&island={{ selected_island }}&status={{ selected_status }}&page_size={{ page_size }}&page={{ page_obj.next_page_number }}">Next</a></li>
+              <li class="page-item"><a class="page-link" href="?q={{ search|urlencode }}&island={{ selected_island }}&status={{ selected_status }}&page_size={{ page_size }}&page={{ page_obj.paginator.num_pages }}">Last</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+{{ map_points|json_script:"house-points" }}
+<script>
+  const points = JSON.parse(document.getElementById('house-points').textContent);
+
+  // One status → colour/tone rule, used by map markers and table pills.
+  function statusStyle(text) {
+    const s = String(text || '').toLowerCase();
+    if (s.includes('completed') || s.includes('handed over')) return { tone: 'green', colour: '#16834a' };
+    if (s.includes('under reconstruction') || s.includes('in progress')) return { tone: 'amber', colour: '#d18a00' };
+    if (s.includes('hold') || s.includes('suspend')) return { tone: 'red', colour: '#c43d3d' };
+    return { tone: 'blue', colour: '#0033a0' };   // Registered / default
+  }
+
+  document.querySelectorAll('.status-pill').forEach(function (el) {
+    el.dataset.tone = statusStyle(el.textContent).tone;
+  });
+
+  const map = L.map('house-map', {
+    center: [7.45, 151.85],
+    zoom: 10,
+    scrollWheelZoom: false      // stops the map hijacking page scroll; enabled once the map is focused
+  });
+  map.once('focus', function () { map.scrollWheelZoom.enable(); });
+
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    referrerPolicy: 'strict-origin-when-cross-origin',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>'
+  }).addTo(map);
+
+  const bounds = [];
+
+  // Houses close together are grouped into a numbered badge. Clicking a badge zooms in to show the
+  // houses inside it; houses sharing the exact same location fan out ("spiderfy") at the closest zoom.
+  const clusters = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true,
+    spiderfyOnMaxZoom: true,
+    maxClusterRadius: 45,
+    spiderLegPolylineOptions: { weight: 1.5, color: '#0033a0', opacity: 0.6 },
+    iconCreateFunction: function (cluster) {
+      return L.divIcon({
+        html: '<span class="house-cluster">' + cluster.getChildCount() + '</span>',
+        className: 'house-cluster-wrap',
+        iconSize: [42, 42]
+      });
+    }
+  });
+
+  // House-shaped marker in the status colour, with the house's number inside it
+  function houseIcon(colour, n) {
+    const size = 38;
+    const digits = String(n).length;
+    const fontSize = digits >= 3 ? 7 : (digits === 2 ? 8.5 : 9.5);
+    const baseline = digits >= 3 ? 18 : 18.8;
+    const svg = '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" aria-hidden="true">' +
+      '<path d="M12 2 2 11h2.5v10h15V11H22z" fill="' + colour + '" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>' +
+      '<text x="12" y="' + baseline + '" text-anchor="middle" font-size="' + fontSize + '" font-weight="700" fill="#fff" ' +
+      'font-family="IBM Plex Sans, system-ui, sans-serif">' + n + '</text></svg>';
+    return L.divIcon({
+      className: 'house-marker',
+      html: svg,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      popupAnchor: [0, -size / 2]
+    });
+  }
+
+  // Popup card, built with DOM nodes and textContent so house data is never injected as HTML.
+  // It always shows the ID, status and a link; location, progress, engineer, last update and
+  // follow-up flag appear automatically if the view includes them in map_points.
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function icon(pathData) {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', pathData);
+    svg.appendChild(path);
+    return svg;
+  }
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+  function row(key, value, muted) {
+    const r = el('div', 'hp-row');
+    r.appendChild(el('span', 'hp-key', key));
+    r.appendChild(el('span', 'hp-val' + (muted ? ' is-empty' : ''), value));
+    return r;
+  }
+  function buildPopup(p) {
+    const card = el('div', 'hp');
+
+    const head = el('div', 'hp-head');
+    head.appendChild(el('div', 'hp-id', p.id));
+    if (p.location) {
+      const loc = el('div', 'hp-loc');
+      loc.appendChild(icon('M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z'));
+      loc.appendChild(el('span', null, p.location));
+      head.appendChild(loc);
+    }
+    const pill = el('span', 'hp-pill', p.status);
+    pill.dataset.tone = statusStyle(p.status).tone;
+    head.appendChild(pill);
+    card.appendChild(head);
+
+    if (p.progress !== undefined && p.progress !== null && p.progress !== '' && Number.isFinite(Number(p.progress))) {
+      const pct = Math.max(0, Math.min(100, Number(p.progress)));
+      const prog = el('div', 'hp-progress');
+      const top = el('div', 'hp-progress-top');
+      top.appendChild(el('span', null, 'Verified progress'));
+      top.appendChild(el('strong', null, pct + '%'));
+      prog.appendChild(top);
+      const bar = el('div', 'hp-bar');
+      const fill = el('span');
+      fill.style.width = pct + '%';
+      bar.appendChild(fill);
+      prog.appendChild(bar);
+      card.appendChild(prog);
+    }
+
+    const hasEngineer = p.engineer !== undefined;
+    const hasLast = p.last_update !== undefined;
+    if (hasEngineer || hasLast) {
+      const rows = el('div', 'hp-rows');
+      if (hasEngineer) {
+        const name = p.engineer || 'Unassigned';
+        rows.appendChild(row('Engineer', name, name === 'Unassigned'));
+      }
+      if (hasLast) {
+        const last = p.last_update || 'No approved update yet';
+        rows.appendChild(row('Last approved update', last, last === 'No approved update yet'));
+      }
+      card.appendChild(rows);
+    }
+
+    if (p.stale !== undefined) {
+      const note = el('div', 'hp-note ' + (p.stale ? 'warn' : 'ok'));
+      if (p.stale) {
+        note.appendChild(icon('M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'));
+        note.appendChild(el('span', null, 'Follow-up required' + (p.days_since_update !== undefined ? ' · ' + p.days_since_update + ' days without approved progress' : '')));
+      } else {
+        note.appendChild(icon('M20 6 9 17l-5-5'));
+        note.appendChild(el('span', null, 'Within follow-up threshold'));
+      }
+      card.appendChild(note);
+    }
+
+    const link = el('a', 'hp-btn', 'Open house record');
+    link.href = p.url;
+    card.appendChild(link);
+    return card;
+  }
+
+  points.forEach(function (p) {
+    const lat = Number(p.lat);
+    const lon = Number(p.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) ||
+        lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      return;
+    }
+
+    const markerColour = statusStyle(p.status).colour;
+    const markerNumber = bounds.length + 1;
+
+    const marker = L.marker([lat, lon], {
+      icon: houseIcon(markerColour, markerNumber),
+      title: String(p.id || `House ${markerNumber}`)
+    });
+
+    marker.bindPopup(buildPopup(p), { className: 'house-popup', minWidth: 250, maxWidth: 300 });
+    clusters.addLayer(marker);
+
+    bounds.push([lat, lon]);
+  });
+
+  map.addLayer(clusters);
+
+  if (bounds.length > 0) {
+    map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+  }
+
+  setTimeout(function () { map.invalidateSize(); }, 250);
+
+  const mapShell = document.getElementById('house-map-shell');
+  const mapToggle = document.getElementById('map-maximize-toggle');
+
+  function setMapMaximized(maximized) {
     mapShell.classList.toggle('is-maximized', maximized);
     document.body.classList.toggle('map-is-maximized', maximized);
     mapToggle.setAttribute('aria-pressed', String(maximized));
     mapToggle.setAttribute('aria-label', maximized ? 'Restore map size' : 'Maximize map');
     mapToggle.textContent = maximized ? '✕ Close expanded map' : '⛶ Expand map';
-    // Leaflet must recalculate its dimensions after the container changes.
-    window.setTimeout(function() {
-        map.invalidateSize({pan: false});
-        if (bounds.length > 1) {
-            map.fitBounds(bounds, {padding: [30, 30], maxZoom: 14});
-        }
+    if (maximized) map.scrollWheelZoom.enable();
+    window.setTimeout(function () {
+      map.invalidateSize({ pan: false });
+      if (bounds.length > 1) {
+        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+      }
     }, 180);
-}
+  }
 
-mapToggle.addEventListener('click', function() {
+  mapToggle.addEventListener('click', function () {
     setMapMaximized(!mapShell.classList.contains('is-maximized'));
-});
+  });
 
-document.addEventListener('keydown', function(event) {
+  document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape' && mapShell.classList.contains('is-maximized')) {
-        setMapMaximized(false);
+      setMapMaximized(false);
     }
-});
-
+  });
 </script><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script></body></html>
